@@ -1,0 +1,54 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Source Code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'zulu'
+
+    # Создаем базовые настройки Capacitor и заглушку package.json
+    - name: Initialize Web Project Env
+      run: |
+        if [ ! -f package.json ]; then
+          echo '{"name": "echo-archive", "version": "1.0.0", "dependencies": {}}' > package.json
+        fi
+        npm install @capacitor/core @capacitor/cli
+        npm install @capacitor/android
+        npx cap init EchoArchive com.vovka11.echoarchive --web-dir=.
+        npx cap add android
+
+    # Синхронизируем HTML/JS код с андроид-проектом
+    - name: Sync Assets to Android
+      run: npx cap sync android
+
+    # Собираем сам APK-файл
+    - name: Build APK with Gradle
+      run: |
+        cd android
+        ./gradlew assembleDebug
+
+    # Выгружаем готовый APK во вкладку Artifacts
+    - name: Upload Finished APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: EchoArchive-debug-apk
+        path: android/app/build/outputs/apk/debug/app-debug.apk
