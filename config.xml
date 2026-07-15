@@ -9,7 +9,7 @@
     <allow-intent href="http://*/*" />
     <allow-intent href="https://*/*" />
 
-    <icon src="assets/icons/logo-app.png" />
+    <icon src="www/assets/icons/logo-app.png" />
     
     <preference name="KeepRunning" value="true" />
 </widget>

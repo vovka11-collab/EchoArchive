@@ -35,10 +35,10 @@ jobs:
         cordova create cordova-app com.vovka11.echoarchive EchoArchive
         rm -rf cordova-app/www/*
         cp index.html cordova-app/www/
-        if [ -f config.xml ]; then cp config.xml cordova-app/; fi
         if [ -d css ]; then cp -r css cordova-app/www/; fi
         if [ -d js ]; then cp -r js cordova-app/www/; fi
         if [ -d assets ]; then cp -r assets cordova-app/www/; fi
+        if [ -f config.xml ]; then cp config.xml cordova-app/; fi
 
     # Добавляем платформу Android и собираем APK
     - name: Build Android Platform
