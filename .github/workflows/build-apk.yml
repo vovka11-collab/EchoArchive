@@ -25,16 +25,25 @@ jobs:
         java-version: '17'
         distribution: 'zulu'
 
-    # Инициализируем Capacitor, указав в качестве веб-директории нашу папку src
+    # Переносим все веб-ресурсы из корня во временную папку dist для Capacitor
+    - name: Bundle Web Assets
+      run: |
+        mkdir dist
+        cp index.html dist/
+        if [ -d css ]; then cp -r css dist/; fi
+        if [ -d js ]; then cp -r js dist/; fi
+        if [ -d assets ]; then cp -r assets dist/; fi
+
+    # Инициализируем Capacitor, указав правильную папку dist с index.html
     - name: Initialize Capacitor Env
       run: |
         echo '{"name": "echo-archive", "version": "1.0.0", "dependencies": {}}' > package.json
         npm install @capacitor/core @capacitor/cli
         npm install @capacitor/android
-        npx cap init EchoArchive com.vovka11.echoarchive --web-dir=src
+        npx cap init EchoArchive com.vovka11.echoarchive --web-dir=dist
         npx cap add android
 
-    # Синхронизируем код из папки src с Android-проектом
+    # Синхронизируем код с Android-платформой
     - name: Sync Assets to Android
       run: npx cap sync android
 
@@ -44,7 +53,7 @@ jobs:
         cd android
         ./gradlew assembleDebug
 
-    # Загружаем готовый APK
+    # Выгружаем готовый APK
     - name: Upload Finished APK
       uses: actions/upload-artifact@v4
       with:
