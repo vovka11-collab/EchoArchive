@@ -1,17 +1,32 @@
 // Конфиг и глобальное состояние
 const state = {
     currentTracks: [],
-    currentIndex: -1
+    currentIndex: -1,
+    searchType: 'track' // По умолчанию ищем по трекам
 };
 
-// Функция поиска на Archive.org
+// Функция поиска на Archive.org с учетом выбранного типа
 async function searchArchive(query) {
     const tracksList = document.getElementById('tracks-list');
-    tracksList.innerHTML = `<p class="status-msg">Загрузка треков...</p>`;
+    tracksList.innerHTML = `<p class="status-msg">Загрузка...</p>`;
 
     try {
-        // Запрос к Archive.org API для поиска аудиозаписей
-        const response = await fetch(`https://archive.org/advancedsearch.php?q=title:(${query}) AND mediatype:(audio)&fl[]=identifier,title,creator,downloads&sort[]=downloads+desc&output=json&rows=15`);
+        let apiQuery = '';
+
+        // Формируем запрос в зависимости от выбранного типа поиска
+        if (state.searchType === 'track') {
+            apiQuery = `title:(${query}) AND mediatype:(audio)`;
+        } else if (state.searchType === 'artist') {
+            apiQuery = `creator:(${query}) AND mediatype:(audio)`;
+        } else if (state.searchType === 'album') {
+            // Ищем аудио-коллекции или записи, содержащие "album" в метаданных
+            apiQuery = `(title:(${query}) OR subject:(album)) AND mediatype:(audio)`;
+        } else if (state.searchType === 'playlist') {
+            // Ищем плейлисты / подборки
+            apiQuery = `(title:(${query}) OR description:(playlist)) AND mediatype:(audio)`;
+        }
+
+        const response = await fetch(`https://archive.org/advancedsearch.php?q=${encodeURIComponent(apiQuery)}&fl[]=identifier,title,creator,downloads&sort[]=downloads+desc&output=json&rows=15`);
         const data = await response.json();
         
         const docs = data.response.docs;
@@ -24,7 +39,6 @@ async function searchArchive(query) {
             id: doc.identifier,
             title: doc.title || 'Unknown Title',
             artist: doc.creator || 'Unknown Artist',
-            // Стандартное лого архива, если нет обложки
             cover: `https://archive.org/services/img/${doc.identifier}`
         }));
 
@@ -51,7 +65,6 @@ function renderTracks() {
             </div>
         `;
 
-        // Клик по треку запускает проигрывание
         trackItem.addEventListener('click', () => {
             selectTrack(index);
         });
@@ -61,19 +74,30 @@ function renderTracks() {
 }
 
 // Слушатели поиска
-document.getElementById('search-btn').addEventListener('click', () => {
+const performSearch = () => {
     const query = document.getElementById('search-input').value.trim();
     if (query) searchArchive(query);
+};
+
+document.getElementById('search-btn').addEventListener('click', performSearch);
+document.getElementById('search-input').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') performSearch();
 });
 
-document.getElementById('search-input').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        const query = document.getElementById('search-input').value.trim();
-        if (query) searchArchive(query);
-    }
+// Обработка кликов по кнопкам-фильтрам
+document.querySelectorAll('.filter-chip').forEach(chip => {
+    chip.addEventListener('click', (e) => {
+        // Убираем активный класс у всех и добавляем нажатому
+        document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+        e.target.classList.add('active');
+
+        // Меняем тип поиска в состоянии и сразу перезапускаем поиск
+        state.searchType = e.target.getAttribute('data-type');
+        performSearch();
+    });
 });
 
 // Автопоиск при старте приложения
 window.addEventListener('DOMContentLoaded', () => {
-    searchArchive('Nier Automata');
+    searchArchive('Evangelion');
 });
