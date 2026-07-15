@@ -29,14 +29,13 @@ jobs:
     - name: Install Cordova
       run: npm install -g cordova
 
-    # Создаем проект Cordova и переносим файлы
+    # Создаем проект Cordova и переносим все файлы вместе с конфигом
     - name: Create Cordova Project
       run: |
         cordova create cordova-app com.vovka11.echoarchive EchoArchive
-        
-        # Очищаем дефолтную папку www в Cordova и копируем туда наш проект
         rm -rf cordova-app/www/*
         cp index.html cordova-app/www/
+        if [ -f config.xml ]; then cp config.xml cordova-app/; fi
         if [ -d css ]; then cp -r css cordova-app/www/; fi
         if [ -d js ]; then cp -r js cordova-app/www/; fi
         if [ -d assets ]; then cp -r assets cordova-app/www/; fi
@@ -48,7 +47,7 @@ jobs:
         cordova platform add android
         cordova build android --debug
 
-    # Выгружаем готовый APK файл
+    # Выгружаем готовый APK файл в артефакты
     - name: Upload Finished APK
       uses: actions/upload-artifact@v4
       with:
