@@ -1,14 +1,65 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title></title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EchoArchive</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
-
 <body>
-  
-</body>
 
+    <div class="app-container">
+        <header class="header">
+            <div class="logo-area">
+                <img src="assets/icons/logo-app.png" alt="EchoArchive Logo" class="app-logo" onerror="this.style.display='none'">
+                <h1>EchoArchive</h1>
+            </div>
+        </header>
+
+        <section class="search-section">
+            <div class="search-box">
+                <span class="material-icons">search</span>
+                <input type="text" id="search-input" placeholder="Поиск музыки на Archive.org..." value="NiR Automata">
+                <button id="search-btn">Искать</button>
+            </div>
+        </section>
+
+        <main class="tracks-section">
+            <h2>Результаты поиска</h2>
+            <div id="tracks-list" class="tracks-list">
+                <p class="status-msg">Введите запрос и нажмите "Искать"</p>
+            </div>
+        </main>
+
+        <footer class="player-bar">
+            <div class="player-info">
+                <img id="player-cover" src="https://archive.org/images/glogo.png" alt="Cover" class="player-cover">
+                <div class="player-text">
+                    <div id="player-title" class="player-title">Не выбран трек</div>
+                    <div id="player-artist" class="player-artist">EchoArchive</div>
+                </div>
+            </div>
+
+            <div class="player-controls">
+                <button id="prev-btn" class="control-btn"><span class="material-icons">skip_previous</span></button>
+                <button id="play-btn" class="control-btn play-main"><span class="material-icons">play_arrow</span></button>
+                <button id="next-btn" class="control-btn"><span class="material-icons">skip_next</span></button>
+            </div>
+
+            <div class="player-progress-container">
+                <input type="range" id="progress-bar" value="0" max="100" class="progress-bar">
+                <div class="time-info">
+                    <span id="current-time">0:00</span>
+                    <span id="total-time">0:00</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <audio id="audio-player"></audio>
+
+    <script src="js/app.js"></script>
+    <script src="js/player.js"></script>
+</body>
 </html>
