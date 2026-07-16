@@ -1,119 +1,123 @@
-const audio = document.getElementById('audio-player');
-const playBtn = document.getElementById('play-btn');
-const prevBtn = document.getElementById('prev-btn');
-const nextBtn = document.getElementById('next-btn');
-const progressBar = document.getElementById('progress-bar');
-const currentTimeEl = document.getElementById('current-time');
-const totalTimeEl = document.getElementById('total-time');
+window.Player = {
+    audio: new Audio(),
+    playlist: [],
+    currentIndex: -1,
+    isPlaying: false,
 
-const playerCover = document.getElementById('player-cover');
-const playerTitle = document.getElementById('player-title');
-const playerArtist = document.getElementById('player-artist');
+    init() {
+        // Слушаем события аудио-движка
+        this.audio.addEventListener('timeupdate', () => this.updateProgress());
+        this.audio.addEventListener('ended', () => this.next());
 
-// Выбор и загрузка трека
-async function selectTrack(index) {
-    if (index < 0 || index >= state.currentTracks.length) return;
-    
-    state.currentIndex = index;
-    const track = state.currentTracks[index];
+        // Привязываем кнопки управления
+        const playBtn = document.getElementById('play-btn');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
 
-    // Обновляем плеер в UI
-    playerTitle.textContent = track.title;
-    playerArtist.textContent = track.artist;
-    playerCover.src = track.cover;
+        if (playBtn) playBtn.onclick = () => this.togglePlay();
+        if (prevBtn) prevBtn.onclick = () => this.prev();
+        if (nextBtn) nextBtn.onclick = () => this.next();
 
-    // Выделяем активный трек в списке
-    const items = document.querySelectorAll('.track-item');
-    items.forEach((item, i) => {
-        item.classList.toggle('active', i === index);
-    });
-
-    // Получаем список файлов из архива, чтобы найти mp3
-    try {
-        const response = await fetch(`https://archive.org/metadata/${track.id}`);
-        const data = await response.json();
-        
-        // Находим первый аудиофайл (часто mp3 или ogg)
-        const audioFile = data.files.find(f => f.name.endsWith('.mp3') || f.name.endsWith('.ogg'));
-        
-        if (audioFile) {
-            const streamUrl = `https://archive.org/download/${track.id}/${audioFile.name}`;
-            audio.src = streamUrl;
-            playTrack();
-        } else {
-            alert('Не удалось найти подходящий аудиофайл для воспроизведения.');
+        // Перемотка трека пальцем по полоске
+        const progressBar = document.getElementById('progress-bar');
+        if (progressBar) {
+            progressBar.oninput = (e) => {
+                if (this.audio.duration) {
+                    this.audio.currentTime = (e.target.value / 100) * this.audio.duration;
+                }
+            };
         }
-    } catch (e) {
-        console.error("Ошибка загрузки аудиофайла:", e);
-    }
-}
+    },
 
-function playTrack() {
-    audio.play();
-    playBtn.innerHTML = `<span class="material-icons">pause</span>`;
-}
+    async loadAndPlay(track, playlist, index) {
+        this.playlist = playlist;
+        this.currentIndex = index;
 
-function pauseTrack() {
-    audio.pause();
-    playBtn.innerHTML = `<span class="material-icons">play_arrow</span>`;
-}
+        this.audio.pause();
+        this.isPlaying = false;
 
-// События кнопок плеера
-playBtn.addEventListener('click', () => {
-    if (audio.paused) {
-        if (state.currentIndex === -1 && state.currentTracks.length > 0) {
-            selectTrack(0);
-        } else {
-            playTrack();
+        document.getElementById('player-title').innerText = "Загрузка...";
+        document.getElementById('player-artist').innerText = track.artist;
+        document.getElementById('player-cover').src = track.cover;
+
+        try {
+            // Запрашиваем список файлов релиза
+            const response = await fetch(`https://archive.org/metadata/${track.id}`);
+            const data = await response.json();
+            
+            // Находим первый MP3-файл в раздаче
+            const mp3File = data.files.find(f => f.name.endsWith('.mp3'));
+
+            if (!mp3File) {
+                alert("В этом релизе не найдено MP3 файлов.");
+                document.getElementById('player-title').innerText = "Формат не поддерживается";
+                return;
+            }
+
+            // Прямой стриминговый URL
+            const streamUrl = `https://archive.org/download/${track.id}/${encodeURIComponent(mp3File.name)}`;
+            
+            this.audio.src = streamUrl;
+            this.audio.load();
+
+            document.getElementById('player-title').innerText = track.title;
+            this.play();
+
+        } catch (error) {
+            console.error("Ошибка при получении файлов:", error);
+            document.getElementById('player-title').innerText = "Ошибка загрузки";
         }
-    } else {
-        pauseTrack();
-    }
-});
+    },
 
-prevBtn.addEventListener('click', () => {
-    if (state.currentIndex > 0) {
-        selectTrack(state.currentIndex - 1);
-    }
-});
+    play() {
+        this.audio.play()
+            .then(() => {
+                this.isPlaying = true;
+                const playIcon = document.querySelector('#play-btn .material-icons');
+                if (playIcon) playIcon.innerText = 'pause';
+            })
+            .catch(err => {
+                console.error("Ошибка воспроизведения:", err);
+            });
+    },
 
-nextBtn.addEventListener('click', () => {
-    if (state.currentIndex < state.currentTracks.length - 1) {
-        selectTrack(state.currentIndex + 1);
-    }
-});
-
-// Обновление прогресс-бара
-audio.addEventListener('timeupdate', () => {
-    if (audio.duration) {
-        const percent = (audio.currentTime / audio.duration) * 100;
-        progressBar.value = percent;
+    togglePlay() {
+        if (!this.audio.src) return;
         
-        currentTimeEl.textContent = formatTime(audio.currentTime);
-        totalTimeEl.textContent = formatTime(audio.duration);
-    }
-});
+        const playIcon = document.querySelector('#play-btn .material-icons');
+        if (this.isPlaying) {
+            this.audio.pause();
+            this.isPlaying = false;
+            if (playIcon) playIcon.innerText = 'play_arrow';
+        } else {
+            this.audio.play()
+                .then(() => {
+                    this.isPlaying = true;
+                    if (playIcon) playIcon.innerText = 'pause';
+                });
+        }
+    },
 
-// Перемотка вручную
-progressBar.addEventListener('input', () => {
-    if (audio.duration) {
-        const newTime = (progressBar.value / 100) * audio.duration;
-        audio.currentTime = newTime;
-    }
-});
+    next() {
+        if (this.currentIndex < this.playlist.length - 1) {
+            const nextIndex = this.currentIndex + 1;
+            this.loadAndPlay(this.playlist[nextIndex], this.playlist, nextIndex);
+        }
+    },
 
-// Автоматическое переключение на следующий трек
-audio.addEventListener('ended', () => {
-    if (state.currentIndex < state.currentTracks.length - 1) {
-        selectTrack(state.currentIndex + 1);
-    } else {
-        pauseTrack();
-    }
-});
+    prev() {
+        if (this.currentIndex > 0) {
+            const prevIndex = this.currentIndex - 1;
+            this.loadAndPlay(this.playlist[prevIndex], this.playlist, prevIndex);
+        }
+    },
 
-// Форматирование секунд в "минуты:секунды"
-function formatTime(seconds) {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-}
+    updateProgress() {
+        const cur = this.audio.currentTime || 0;
+        const dur = this.audio.duration || 0;
+        const progressBar = document.getElementById('progress-bar');
+        if (dur > 0 && progressBar) {
+            progressBar.value = (cur / dur) * 100;
+        }
+    }
+};

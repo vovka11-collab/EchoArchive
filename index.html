@@ -4,25 +4,266 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EchoArchive</title>
-    <link rel="stylesheet" href="./css/style.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/search.css">
+    <link rel="stylesheet" href="css/settings.css">
+
+    <style>
+        /* Отступ снизу для контента, чтобы плеер не перекрывал элементы */
+        .app-container {
+            padding-bottom: 90px !important;
+            box-sizing: border-box !important;
+        }
+
+        /* --- СТИЛИ ШАПКИ И ТВОЕГО ЛОГОТИПА --- */
+        .app-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            background-color: #121214;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* Твой логотип-картинка */
+        .logo-img {
+            width: 32px !important;
+            height: 32px !important;
+            object-fit: contain !important;
+        }
+
+        .logo-text {
+            font-size: 22px;
+            font-weight: 700;
+            color: #ffffff;
+            margin: 0;
+            font-family: sans-serif;
+        }
+
+        /* --- КРАСИВАЯ СТРОКА ПОИСКА --- */
+        .search-section {
+            padding: 0 16px 12px 16px;
+        }
+
+        .search-bar-container {
+            display: flex !important;
+            align-items: center !important;
+            background-color: #1a1a1e !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 8px !important;
+            padding: 4px 8px !important;
+            gap: 8px !important;
+            height: 48px !important;
+            box-sizing: border-box !important;
+        }
+
+        .search-icon {
+            color: #8a8a93 !important;
+            font-size: 22px !important;
+            flex-shrink: 0 !important;
+        }
+
+        #search-input {
+            flex-grow: 1 !important;
+            background: none !important;
+            border: none !important;
+            outline: none !important;
+            color: #ffffff !important;
+            font-size: 15px !important;
+            width: 100% !important;
+            padding: 0 !important;
+        }
+
+        /* Стиль кнопки "Искать" */
+        .search-btn {
+            background-color: #00ff66 !important;
+            color: #121214 !important;
+            border: none !important;
+            border-radius: 6px !important;
+            padding: 0 16px !important;
+            font-weight: bold !important;
+            font-size: 14px !important;
+            height: 36px !important;
+            cursor: pointer !important;
+            transition: background-color 0.2s, transform 0.1s !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            flex-shrink: 0 !important;
+        }
+
+        .search-btn:active {
+            background-color: #00cc52 !important;
+            transform: scale(0.97) !important;
+        }
+
+        /* --- ЧИПСЫ В ОДНУ СТРОКУ С ПРОКРУТКОЙ --- */
+        .filter-chips {
+            display: flex !important;
+            overflow-x: auto !important; /* Включает горизонтальную прокрутку */
+            white-space: nowrap !important; /* Запрещает перенос кнопок на новую строку */
+            gap: 8px !important;
+            padding: 8px 0 !important;
+            scrollbar-width: none !important; /* Прячет скроллбар в Firefox */
+        }
+
+        .filter-chips::-webkit-scrollbar {
+            display: none !important; /* Прячет скроллбар в Chrome/Safari/Spck */
+        }
+
+        .filter-chip {
+            flex-shrink: 0 !important; /* Кнопки не будут сжиматься */
+        }
+
+        /* --- ПЛЕЕР (СТАБИЛЬНЫЙ КАРКАС) --- */
+        .player-bar {
+            position: fixed !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            height: 75px !important;
+            background-color: #121214 !important;
+            border-top: 1px solid rgba(0, 255, 102, 0.2) !important;
+            box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.5) !important;
+            z-index: 9999 !important;
+            box-sizing: border-box !important;
+            border-radius: 0 !important;
+            transform: none !important;
+            overflow: visible !important;
+        }
+
+        .player-content {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            height: 100% !important;
+            padding: 0 16px !important;
+            position: relative !important;
+        }
+
+        .cover-container {
+            width: 44px !important;
+            height: 44px !important;
+            border-radius: 6px !important;
+            overflow: hidden !important;
+            flex-shrink: 0 !important;
+            margin-right: 12px !important;
+            display: block !important;
+        }
+
+        .player-cover {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+        }
+
+        .player-text {
+            flex-grow: 1 !important;
+            min-width: 0 !important;
+            margin-right: 12px !important;
+            text-align: left !important;
+            display: block !important;
+        }
+
+        .player-title {
+            font-size: 14px !important;
+            font-weight: 600 !important;
+            color: #ffffff !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+        }
+
+        .player-artist {
+            font-size: 11px !important;
+            color: #00ff66 !important;
+            margin-top: 2px !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+        }
+
+        .player-controls {
+            display: flex !important;
+            align-items: center !important;
+            gap: 12px !important;
+            flex-shrink: 0 !important;
+        }
+
+        .control-btn {
+            background: none !important;
+            border: none !important;
+            color: #ffffff !important;
+            cursor: pointer !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 8px !important;
+            outline: none !important;
+        }
+
+        .control-btn .material-icons {
+            font-size: 28px !important;
+        }
+
+        .control-btn.play-main .material-icons {
+            font-size: 34px !important;
+            color: #00ff66 !important;
+        }
+
+        .player-progress-container {
+            position: absolute !important;
+            top: -3px !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            height: 4px !important;
+            z-index: 10000 !important;
+        }
+
+        .progress-bar {
+            width: 100% !important;
+            height: 4px !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            display: block !important;
+            accent-color: #00ff66 !important;
+            background: rgba(255, 255, 255, 0.1) !important;
+            border: none !important;
+            outline: none !important;
+            cursor: pointer !important;
+        }
+    </style>
 </head>
 <body>
 
     <div class="app-container">
-        <header class="header">
+        
+        <header class="app-header">
             <div class="logo-area">
-                <img src="./assets/icons/logo-app.png" alt="EchoArchive Logo" class="app-logo" onerror="this.style.display='none'">
-                <h1>EchoArchive</h1>
+                <span class="material-icons logo-icon" style="display: none !important;">album</span>
+                
+                <img src="assets/icons/logo-app.png" alt="Logo" class="logo-img">
+                <h1 class="logo-text">EchoArchive</h1>
             </div>
         </header>
-<section class="search-section">
-            <div class="search-box">
-                <span class="material-icons">search</span>
-                <input type="text" id="search-input" placeholder="Искать музыку..." value="Evangelion">
-                <button id="search-btn">Искать</button>
+
+        <section class="search-section">
+            <div class="search-bar-container">
+                <span class="material-icons search-icon">search</span>
+                <input type="text" id="search-input" placeholder="Введите название или автора..." value="Sonic">
+                <button id="search-btn" class="search-btn">Искать</button>
             </div>
-            <div class="search-filters">
+
+            <div class="filter-chips">
                 <button class="filter-chip active" data-type="track">Треки</button>
                 <button class="filter-chip" data-type="artist">Исполнители</button>
                 <button class="filter-chip" data-type="album">Альбомы</button>
@@ -30,41 +271,47 @@
             </div>
         </section>
 
-        <main class="tracks-section">
-            <h2>Результаты поиска</h2>
+        <main class="results-section">
+            <h2 class="section-title">Результаты поиска</h2>
             <div id="tracks-list" class="tracks-list">
                 <p class="status-msg">Введите запрос и нажмите "Искать"</p>
             </div>
         </main>
 
-        <footer class="player-bar">
-            <div class="player-info">
-                <img id="player-cover" src="https://archive.org/images/glogo.png" alt="Cover" class="player-cover">
+        <footer id="player-bar" class="player-bar">
+            <div class="player-progress-container">
+                <input type="range" id="progress-bar" value="0" max="100" class="progress-bar">
+            </div>
+
+            <div class="player-content">
+                <div class="cover-container">
+                    <img id="player-cover" src="https://archive.org/images/glogo.png" alt="Cover" class="player-cover">
+                </div>
+
                 <div class="player-text">
                     <div id="player-title" class="player-title">Не выбран трек</div>
                     <div id="player-artist" class="player-artist">EchoArchive</div>
                 </div>
-            </div>
 
-            <div class="player-controls">
-                <button id="prev-btn" class="control-btn"><span class="material-icons">skip_previous</span></button>
-                <button id="play-btn" class="control-btn play-main"><span class="material-icons">play_arrow</span></button>
-                <button id="next-btn" class="control-btn"><span class="material-icons">skip_next</span></button>
-            </div>
-
-            <div class="player-progress-container">
-                <input type="range" id="progress-bar" value="0" max="100" class="progress-bar">
-                <div class="time-info">
-                    <span id="current-time">0:00</span>
-                    <span id="total-time">0:00</span>
+                <div class="player-controls">
+                    <button id="prev-btn" class="control-btn">
+                        <span class="material-icons">skip_previous</span>
+                    </button>
+                    <button id="play-btn" class="control-btn play-main">
+                        <span class="material-icons">play_arrow</span>
+                    </button>
+                    <button id="next-btn" class="control-btn">
+                        <span class="material-icons">skip_next</span>
+                    </button>
                 </div>
             </div>
         </footer>
+
     </div>
 
-    <audio id="audio-player"></audio>
-
-    <script src="./js/app.js"></script>
-    <script src="./js/player.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/search.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/app.js"></script>
 </body>
 </html>
