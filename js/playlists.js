@@ -1,117 +1,85 @@
 /**
- * EchoArchive — Playlist Manager
- * Управление плейлистами через localStorage
+ * EchoArchive — Playlist storage.
+ * Трек в плейлисте: { releaseId, file, title, artist, cover, format, length, url, addedAt }
+ * Обратная совместимость со старыми записями { id, title, artist, cover }.
  */
 window.Playlists = {
     STORAGE_KEY: 'echoarchive_playlists',
     playlists: [],
 
-    init() {
-        this.load();
-    },
+    init() { this.load(); },
 
     load() {
-        try {
-            const raw = localStorage.getItem(this.STORAGE_KEY);
-            this.playlists = raw ? JSON.parse(raw) : [];
-        } catch (e) {
-            console.error('Playlists: ошибка загрузки', e);
-            this.playlists = [];
-        }
+        try { this.playlists = JSON.parse(localStorage.getItem(this.STORAGE_KEY) || '[]'); }
+        catch (e) { console.error('Playlists load', e); this.playlists = []; }
     },
-
     save() {
-        try {
-            localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.playlists));
-        } catch (e) {
-            console.error('Playlists: ошибка сохранения', e);
-        }
+        try { localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.playlists)); }
+        catch (e) { console.error('Playlists save', e); }
     },
 
     create(name, description) {
-        const playlist = {
+        const pl = {
             id: 'pl_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
-            name: name.trim() || 'Новый плейлист',
+            name: (name || '').trim() || 'Новый плейлист',
             description: (description || '').trim(),
-            tracks: [],
-            createdAt: Date.now(),
-            updatedAt: Date.now()
+            tracks: [], createdAt: Date.now(), updatedAt: Date.now()
         };
-        this.playlists.unshift(playlist);
-        this.save();
-        return playlist;
+        this.playlists.unshift(pl); this.save(); return pl;
     },
+    getById(id) { return this.playlists.find(p => p.id === id) || null; },
+    rename(id, newName) { const p = this.getById(id); if (!p) return false; p.name = (newName || '').trim() || p.name; p.updatedAt = Date.now(); this.save(); return true; },
+    delete(id) { const i = this.playlists.findIndex(p => p.id === id); if (i === -1) return false; this.playlists.splice(i, 1); this.save(); return true; },
 
-    getById(id) {
-        return this.playlists.find(p => p.id === id) || null;
-    },
-
-    rename(id, newName) {
-        const pl = this.getById(id);
-        if (!pl) return false;
-        pl.name = newName.trim() || pl.name;
-        pl.updatedAt = Date.now();
-        this.save();
-        return true;
-    },
-
-    delete(id) {
-        const idx = this.playlists.findIndex(p => p.id === id);
-        if (idx === -1) return false;
-        this.playlists.splice(idx, 1);
-        this.save();
-        return true;
-    },
-
+    /** track = объект трека (новый или legacy). Добавляет один. */
     addTrack(playlistId, track) {
-        const pl = this.getById(playlistId);
-        if (!pl) return false;
-        const exists = pl.tracks.some(t => t.id === track.id);
-        if (exists) return false;
-        pl.tracks.push({
-            id: track.id,
-            title: track.title,
-            artist: track.artist,
-            cover: track.cover,
-            addedAt: Date.now()
+        const p = this.getById(playlistId); if (!p) return false;
+        const key = window.App ? window.App.trackKey(track) : (track.id || track.releaseId || '');
+        if (p.tracks.some(t => (window.App ? window.App.trackKey(t) : t.id) === key)) return false;
+        p.tracks.push(this.normalize(track)); p.updatedAt = Date.now(); this.save(); return true;
+    },
+    /** tracks = массив. Возвращает кол-во реально добавленных. */
+    addTracks(playlistId, tracks) {
+        const p = this.getById(playlistId); if (!p) return 0;
+        let added = 0;
+        tracks.forEach(t => {
+            const key = window.App.trackKey(t);
+            if (!p.tracks.some(x => window.App.trackKey(x) === key)) { p.tracks.push(this.normalize(t)); added++; }
         });
-        pl.updatedAt = Date.now();
-        this.save();
-        return true;
+        if (added) { p.updatedAt = Date.now(); this.save(); }
+        return added;
     },
-
-    removeTrack(playlistId, trackId) {
-        const pl = this.getById(playlistId);
-        if (!pl) return false;
-        const idx = pl.tracks.findIndex(t => t.id === trackId);
-        if (idx === -1) return false;
-        pl.tracks.splice(idx, 1);
-        pl.updatedAt = Date.now();
-        this.save();
-        return true;
+    removeTrack(playlistId, track) {
+        const p = this.getById(playlistId); if (!p) return false;
+        const key = window.App.trackKey(track);
+        const i = p.tracks.findIndex(t => window.App.trackKey(t) === key);
+        if (i === -1) return false; p.tracks.splice(i, 1); p.updatedAt = Date.now(); this.save(); return true;
     },
+    getTracks(id) { const p = this.getById(id); return p ? p.tracks : []; },
+    getAll() { return this.playlists; },
 
-    getTracks(playlistId) {
-        const pl = this.getById(playlistId);
-        return pl ? pl.tracks : [];
+    normalize(t) {
+        return {
+            releaseId: t.releaseId || t.id || '',
+            file: t.file || null,
+            title: t.title || 'Без названия',
+            artist: t.artist || 'Неизвестен',
+            cover: t.cover || '',
+            format: t.format || '',
+            length: t.length || 0,
+            url: t.url || null,
+            addedAt: t.addedAt || Date.now()
+        };
     },
-
-    getCoverUrls(playlist) {
-        if (!playlist.tracks.length) return [];
-        return playlist.tracks.slice(0, 4).map(t => t.cover);
+    getCoverUrls(pl) {
+        const seen = new Set(), out = [];
+        for (const t of pl.tracks) {
+            if (t.cover && !seen.has(t.cover)) { seen.add(t.cover); out.push(t.cover); if (out.length >= 4) break; }
+        }
+        return out;
     },
-
-    getAll() {
-        return this.playlists;
-    },
-
-    count() {
-        return this.playlists.length;
-    },
-
     pluralTracks(n) {
-        const abs = Math.abs(n) % 100;
-        const last = abs % 10;
+        const abs = Math.abs(n) % 100, last = abs % 10;
         if (abs > 10 && abs < 20) return n + ' треков';
         if (last === 1) return n + ' трек';
         if (last >= 2 && last <= 4) return n + ' трека';
