@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<widget id="com.vovka11.echoarchive" version="0.3.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+<widget id="com.vovka11.echoarchive" version="0.3.1" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
     <name>EchoArchive</name>
     <description>Stylish music player with albums and playlists powered by Archive.org</description>
     <author email="vovka11@example.com">vovka11</author>
@@ -8,9 +8,16 @@
     <allow-intent href="http://*/*" />
     <allow-intent href="https://*/*" />
     <allow-navigation href="https://archive.org/*" />
-    <!-- ВАЖНО: путь от корня cordova-проекта (workflow кладёт assets в www/) -->
+
+    <!-- Иконка: путь от корня cordova-проекта (workflow кладёт assets в www/) -->
     <icon src="www/assets/icons/logo-app.png" />
+
+    <!-- ФИКС бага cordova-android@13: явно задаём цвет сплэш-экрана,
+         иначе по умолчанию ставится невалидное значение "0" и падает mergeDebugResources -->
+    <preference name="AndroidWindowSplashScreenBackground" value="#121214" />
+    <preference name="SplashScreenBackgroundColor" value="#121214" />
+    <preference name="BackgroundColor" value="0xff121214" />
+
     <preference name="KeepRunning" value="true" />
     <preference name="DisallowOverscroll" value="true" />
-    <preference name="BackgroundColor" value="0xff121214" />
 </widget>

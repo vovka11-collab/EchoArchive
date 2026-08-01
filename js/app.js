@@ -277,4 +277,4 @@ window.App = {
     }
 };
 
-document.addEventListener('DOMContentLoaded', () => window.App.init());
+document.addEventListener('DOMContentLoaded', () => window.App.init()); 
