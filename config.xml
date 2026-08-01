@@ -1,15 +1,15 @@
 <?xml version='1.0' encoding='utf-8'?>
-<widget id="com.vovka11.echoarchive" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+<widget id="com.vovka11.echoarchive" version="0.2.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
     <name>EchoArchive</name>
-    <description>EchoArchive Music Player</description>
+    <description>Stylish music player with playlists powered by Archive.org</description>
     <author email="vovka11@example.com">vovka11</author>
-    
     <content src="index.html" />
     <access origin="*" />
     <allow-intent href="http://*/*" />
     <allow-intent href="https://*/*" />
-
-    <icon src="www/assets/icons/logo-app.png" />
-    
+    <icon src="assets/icons/logo-app.png" />
     <preference name="KeepRunning" value="true" />
+    <preference name="DisallowOverscroll" value="true" />
+    <preference name="BackgroundColor" value="0xff121214" />
+    <preference name="StatusBarStyle" value="lightcontent" />
 </widget>

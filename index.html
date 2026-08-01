@@ -2,298 +2,160 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>EchoArchive</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/search.css">
-    <link rel="stylesheet" href="css/settings.css">
-
-    <style>
-        /* Отступ снизу для контента, чтобы плеер не перекрывал элементы */
-        .app-container {
-            padding-bottom: 90px !important;
-            box-sizing: border-box !important;
-        }
-
-        /* --- СТИЛИ ШАПКИ И ТВОЕГО ЛОГОТИПА --- */
-        .app-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 16px;
-            background-color: #121214;
-        }
-
-        .logo-area {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        /* Твой логотип-картинка */
-        .logo-img {
-            width: 32px !important;
-            height: 32px !important;
-            object-fit: contain !important;
-        }
-
-        .logo-text {
-            font-size: 22px;
-            font-weight: 700;
-            color: #ffffff;
-            margin: 0;
-            font-family: sans-serif;
-        }
-
-        /* --- КРАСИВАЯ СТРОКА ПОИСКА --- */
-        .search-section {
-            padding: 0 16px 12px 16px;
-        }
-
-        .search-bar-container {
-            display: flex !important;
-            align-items: center !important;
-            background-color: #1a1a1e !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
-            border-radius: 8px !important;
-            padding: 4px 8px !important;
-            gap: 8px !important;
-            height: 48px !important;
-            box-sizing: border-box !important;
-        }
-
-        .search-icon {
-            color: #8a8a93 !important;
-            font-size: 22px !important;
-            flex-shrink: 0 !important;
-        }
-
-        #search-input {
-            flex-grow: 1 !important;
-            background: none !important;
-            border: none !important;
-            outline: none !important;
-            color: #ffffff !important;
-            font-size: 15px !important;
-            width: 100% !important;
-            padding: 0 !important;
-        }
-
-        /* Стиль кнопки "Искать" */
-        .search-btn {
-            background-color: #00ff66 !important;
-            color: #121214 !important;
-            border: none !important;
-            border-radius: 6px !important;
-            padding: 0 16px !important;
-            font-weight: bold !important;
-            font-size: 14px !important;
-            height: 36px !important;
-            cursor: pointer !important;
-            transition: background-color 0.2s, transform 0.1s !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            flex-shrink: 0 !important;
-        }
-
-        .search-btn:active {
-            background-color: #00cc52 !important;
-            transform: scale(0.97) !important;
-        }
-
-        /* --- ЧИПСЫ В ОДНУ СТРОКУ С ПРОКРУТКОЙ --- */
-        .filter-chips {
-            display: flex !important;
-            overflow-x: auto !important; /* Включает горизонтальную прокрутку */
-            white-space: nowrap !important; /* Запрещает перенос кнопок на новую строку */
-            gap: 8px !important;
-            padding: 8px 0 !important;
-            scrollbar-width: none !important; /* Прячет скроллбар в Firefox */
-        }
-
-        .filter-chips::-webkit-scrollbar {
-            display: none !important; /* Прячет скроллбар в Chrome/Safari/Spck */
-        }
-
-        .filter-chip {
-            flex-shrink: 0 !important; /* Кнопки не будут сжиматься */
-        }
-
-        /* --- ПЛЕЕР (СТАБИЛЬНЫЙ КАРКАС) --- */
-        .player-bar {
-            position: fixed !important;
-            bottom: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            width: 100% !important;
-            height: 75px !important;
-            background-color: #121214 !important;
-            border-top: 1px solid rgba(0, 255, 102, 0.2) !important;
-            box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.5) !important;
-            z-index: 9999 !important;
-            box-sizing: border-box !important;
-            border-radius: 0 !important;
-            transform: none !important;
-            overflow: visible !important;
-        }
-
-        .player-content {
-            display: flex !important;
-            align-items: center !important;
-            justify-content: space-between !important;
-            height: 100% !important;
-            padding: 0 16px !important;
-            position: relative !important;
-        }
-
-        .cover-container {
-            width: 44px !important;
-            height: 44px !important;
-            border-radius: 6px !important;
-            overflow: hidden !important;
-            flex-shrink: 0 !important;
-            margin-right: 12px !important;
-            display: block !important;
-        }
-
-        .player-cover {
-            width: 100% !important;
-            height: 100% !important;
-            object-fit: cover !important;
-        }
-
-        .player-text {
-            flex-grow: 1 !important;
-            min-width: 0 !important;
-            margin-right: 12px !important;
-            text-align: left !important;
-            display: block !important;
-        }
-
-        .player-title {
-            font-size: 14px !important;
-            font-weight: 600 !important;
-            color: #ffffff !important;
-            white-space: nowrap !important;
-            overflow: hidden !important;
-            text-overflow: ellipsis !important;
-        }
-
-        .player-artist {
-            font-size: 11px !important;
-            color: #00ff66 !important;
-            margin-top: 2px !important;
-            white-space: nowrap !important;
-            overflow: hidden !important;
-            text-overflow: ellipsis !important;
-        }
-
-        .player-controls {
-            display: flex !important;
-            align-items: center !important;
-            gap: 12px !important;
-            flex-shrink: 0 !important;
-        }
-
-        .control-btn {
-            background: none !important;
-            border: none !important;
-            color: #ffffff !important;
-            cursor: pointer !important;
-            display: inline-flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            padding: 8px !important;
-            outline: none !important;
-        }
-
-        .control-btn .material-icons {
-            font-size: 28px !important;
-        }
-
-        .control-btn.play-main .material-icons {
-            font-size: 34px !important;
-            color: #00ff66 !important;
-        }
-
-        .player-progress-container {
-            position: absolute !important;
-            top: -3px !important;
-            left: 0 !important;
-            right: 0 !important;
-            width: 100% !important;
-            height: 4px !important;
-            z-index: 10000 !important;
-        }
-
-        .progress-bar {
-            width: 100% !important;
-            height: 4px !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            display: block !important;
-            accent-color: #00ff66 !important;
-            background: rgba(255, 255, 255, 0.1) !important;
-            border: none !important;
-            outline: none !important;
-            cursor: pointer !important;
-        }
-    </style>
+    <link rel="stylesheet" href="css/playlist.css">
 </head>
 <body>
-
     <div class="app-container">
-        
-        <header class="app-header">
-            <div class="logo-area">
-                <span class="material-icons logo-icon" style="display: none !important;">album</span>
-                
-                <img src="assets/icons/logo-app.png" alt="Logo" class="logo-img">
-                <h1 class="logo-text">EchoArchive</h1>
-            </div>
-        </header>
 
-        <section class="search-section">
-            <div class="search-bar-container">
-                <span class="material-icons search-icon">search</span>
-                <input type="text" id="search-input" placeholder="Введите название или автора..." value="Sonic">
-                <button id="search-btn" class="search-btn">Искать</button>
-            </div>
+        <!-- ═══════════ ЭКРАН: ГЛАВНАЯ ═══════════ -->
+        <section id="screen-home" class="screen active">
+            <header class="app-header">
+                <div class="logo-area">
+                    <img src="assets/icons/logo-app.png" alt="Logo" class="logo-img">
+                    <h1 class="logo-text">EchoArchive</h1>
+                </div>
+            </header>
 
-            <div class="filter-chips">
-                <button class="filter-chip active" data-type="track">Треки</button>
-                <button class="filter-chip" data-type="artist">Исполнители</button>
-                <button class="filter-chip" data-type="album">Альбомы</button>
-                <button class="filter-chip" data-type="playlist">Плейлисты</button>
+            <div class="home-content">
+                <h2 class="greeting" id="greeting-text">Добрый вечер</h2>
+
+                <div class="quick-playlists" id="quick-playlists"></div>
+
+                <div class="section-block" id="recent-section" style="display:none;">
+                    <div class="section-header">
+                        <h3>Недавние</h3>
+                    </div>
+                    <div class="playlist-grid" id="recent-playlists"></div>
+                </div>
+
+                <div class="section-block">
+                    <div class="section-header">
+                        <h3>Ваши плейлисты</h3>
+                        <button class="btn-create-playlist" id="btn-create-home">
+                            <span class="material-icons">add</span>
+                        </button>
+                    </div>
+                    <div class="playlist-grid" id="home-playlists"></div>
+                    <div class="empty-state" id="empty-home">
+                        <span class="material-icons empty-icon">library_music</span>
+                        <p>Создайте свой первый плейлист</p>
+                        <button class="btn-primary" id="btn-create-empty">Создать плейлист</button>
+                    </div>
+                </div>
             </div>
         </section>
 
-        <main class="results-section">
-            <h2 class="section-title">Результаты поиска</h2>
-            <div id="tracks-list" class="tracks-list">
-                <p class="status-msg">Введите запрос и нажмите "Искать"</p>
-            </div>
-        </main>
+        <!-- ═══════════ ЭКРАН: ПОИСК ═══════════ -->
+        <section id="screen-search" class="screen">
+            <header class="app-header">
+                <h2 class="screen-title">Поиск</h2>
+            </header>
 
-        <footer id="player-bar" class="player-bar">
+            <div class="search-section">
+                <div class="search-bar-container">
+                    <span class="material-icons search-icon">search</span>
+                    <input type="text" id="search-input" placeholder="Треки, альбомы, исполнители...">
+                    <button id="search-btn" class="search-btn">
+                        <span class="material-icons">arrow_forward</span>
+                    </button>
+                </div>
+                <div class="filter-chips">
+                    <button class="filter-chip active" data-type="track">Треки</button>
+                    <button class="filter-chip" data-type="artist">Исполнители</button>
+                    <button class="filter-chip" data-type="album">Альбомы</button>
+                </div>
+            </div>
+
+            <div class="results-section">
+                <div id="tracks-list" class="tracks-list">
+                    <div class="empty-state">
+                        <span class="material-icons empty-icon">search</span>
+                        <p>Найдите музыку на Archive.org</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════ ЭКРАН: БИБЛИОТЕКА ═══════════ -->
+        <section id="screen-library" class="screen">
+            <header class="app-header">
+                <h2 class="screen-title">Библиотека</h2>
+                <button class="btn-create-playlist" id="btn-create-library">
+                    <span class="material-icons">add</span>
+                </button>
+            </header>
+
+            <div class="library-content">
+                <div class="playlist-list" id="library-playlists"></div>
+                <div class="empty-state" id="empty-library">
+                    <span class="material-icons empty-icon">queue_music</span>
+                    <p>Здесь появятся ваши плейлисты</p>
+                    <button class="btn-primary" id="btn-create-library-empty">Создать плейлист</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════ ЭКРАН: ПЛЕЙЛИСТ ═══════════ -->
+        <section id="screen-playlist" class="screen">
+            <header class="playlist-detail-header">
+                <button class="back-btn" id="btn-back-playlist">
+                    <span class="material-icons">arrow_back</span>
+                </button>
+                <span class="playlist-detail-title" id="playlist-detail-name">Плейлист</span>
+                <button class="btn-more" id="btn-playlist-menu">
+                    <span class="material-icons">more_vert</span>
+                </button>
+            </header>
+
+            <div class="playlist-hero" id="playlist-hero">
+                <div class="playlist-cover-large" id="playlist-cover-large">
+                    <span class="material-icons">music_note</span>
+                </div>
+                <div class="playlist-meta">
+                    <span class="playlist-type-label">Плейлист</span>
+                    <h2 class="playlist-name-large" id="playlist-name-large">Название</h2>
+                    <p class="playlist-desc" id="playlist-desc"></p>
+                    <p class="playlist-track-count" id="playlist-track-count">0 треков</p>
+                </div>
+            </div>
+
+            <div class="playlist-actions">
+                <button class="btn-play-large" id="btn-play-playlist">
+                    <span class="material-icons">play_arrow</span>
+                </button>
+                <button class="btn-shuffle-large" id="btn-shuffle-playlist">
+                    <span class="material-icons">shuffle</span>
+                </button>
+            </div>
+
+            <div class="playlist-tracks" id="playlist-tracks"></div>
+            <div class="empty-state" id="empty-playlist-tracks" style="display:none;">
+                <span class="material-icons empty-icon">music_off</span>
+                <p>Плейлист пуст. Добавьте треки из поиска.</p>
+            </div>
+        </section>
+
+        <!-- ═══════════ ПЛЕЕР ═══════════ -->
+        <footer id="player-bar" class="player-bar" style="display:none;">
             <div class="player-progress-container">
-                <input type="range" id="progress-bar" value="0" max="100" class="progress-bar">
+                <input type="range" id="progress-bar" value="0" max="100" class="progress-bar" step="0.1">
             </div>
-
             <div class="player-content">
                 <div class="cover-container">
-                    <img id="player-cover" src="https://archive.org/images/glogo.png" alt="Cover" class="player-cover">
+                    <img id="player-cover" src="assets/icons/logo-app.png" alt="Cover" class="player-cover">
                 </div>
-
-                <div class="player-text">
+                <div class="player-text" id="player-text-area">
                     <div id="player-title" class="player-title">Не выбран трек</div>
                     <div id="player-artist" class="player-artist">EchoArchive</div>
                 </div>
-
                 <div class="player-controls">
+                    <button id="shuffle-btn" class="control-btn ctrl-small">
+                        <span class="material-icons">shuffle</span>
+                    </button>
                     <button id="prev-btn" class="control-btn">
                         <span class="material-icons">skip_previous</span>
                     </button>
@@ -303,15 +165,81 @@
                     <button id="next-btn" class="control-btn">
                         <span class="material-icons">skip_next</span>
                     </button>
+                    <button id="repeat-btn" class="control-btn ctrl-small">
+                        <span class="material-icons">repeat</span>
+                    </button>
                 </div>
             </div>
         </footer>
 
+        <!-- ═══════════ НИЖНЯЯ НАВИГАЦИЯ ═══════════ -->
+        <nav class="bottom-nav" id="bottom-nav">
+            <button class="nav-item active" data-screen="home">
+                <span class="material-icons">home</span>
+                <span class="nav-label">Главная</span>
+            </button>
+            <button class="nav-item" data-screen="search">
+                <span class="material-icons">search</span>
+                <span class="nav-label">Поиск</span>
+            </button>
+            <button class="nav-item" data-screen="library">
+                <span class="material-icons">library_music</span>
+                <span class="nav-label">Библиотека</span>
+            </button>
+        </nav>
+
+        <!-- ═══════════ МОДАЛКА: СОЗДАНИЕ ═══════════ -->
+        <div class="modal-overlay" id="modal-create" style="display:none;">
+            <div class="modal-sheet">
+                <div class="modal-handle"></div>
+                <h3 class="modal-title">Новый плейлист</h3>
+                <input type="text" id="input-playlist-name" class="modal-input" placeholder="Название плейлиста" maxlength="60">
+                <input type="text" id="input-playlist-desc" class="modal-input" placeholder="Описание (необязательно)" maxlength="120">
+                <div class="modal-actions">
+                    <button class="btn-secondary" id="btn-cancel-create">Отмена</button>
+                    <button class="btn-primary" id="btn-confirm-create">Создать</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════ МОДАЛКА: ДОБАВИТЬ В ПЛЕЙЛИСТ ═══════════ -->
+        <div class="modal-overlay" id="modal-add-to" style="display:none;">
+            <div class="modal-sheet">
+                <div class="modal-handle"></div>
+                <h3 class="modal-title">Добавить в плейлист</h3>
+                <div class="add-to-list" id="add-to-list"></div>
+                <div class="modal-actions">
+                    <button class="btn-secondary" id="btn-cancel-add">Отмена</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════ МОДАЛКА: МЕНЮ ПЛЕЙЛИСТА ═══════════ -->
+        <div class="modal-overlay" id="modal-playlist-menu" style="display:none;">
+            <div class="modal-sheet">
+                <div class="modal-handle"></div>
+                <div class="menu-list">
+                    <button class="menu-item" id="menu-rename">
+                        <span class="material-icons">edit</span> Переименовать
+                    </button>
+                    <button class="menu-item menu-danger" id="menu-delete">
+                        <span class="material-icons">delete</span> Удалить плейлист
+                    </button>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-secondary" id="btn-cancel-menu">Отмена</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════ ТОСТ ═══════════ -->
+        <div class="toast" id="toast" style="display:none;"></div>
+
     </div>
 
+    <script src="js/playlists.js"></script>
     <script src="js/player.js"></script>
     <script src="js/search.js"></script>
-    <script src="js/settings.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>
