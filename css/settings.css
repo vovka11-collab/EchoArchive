@@ -32,6 +32,19 @@
 .sl-sub { font-size: 12px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sl-arrow { font-size: 18px; color: var(--text-muted); }
 
+/* sync / backup */
+.sync-status { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: var(--radius-md); background: var(--accent-dim); border: 1px solid var(--border); margin-bottom: 12px; font-size: 14px; font-weight: 600; }
+.sync-status .material-icons { color: var(--accent); font-size: 20px; }
+.sync-status.off { background: color-mix(in srgb, var(--bg-elevated) 88%, transparent); }
+.sync-status.off .material-icons { color: var(--text-muted); }
+.sync-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.sync-actions .btn-primary, .sync-actions .btn-secondary { padding: 12px 10px; font-size: 13px; }
+.sync-actions.full { grid-template-columns: 1fr; }
+.sync-note { font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px; }
+.sync-note a { color: var(--accent); text-decoration: none; }
+.sync-divider { height: 1px; background: var(--border); margin: 18px 0; }
+.sync-subtitle { font-size: 12px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 10px; }
+
 .settings-about { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 24px 0 8px; gap: 8px; }
 .about-logo { width: 66px; height: 66px; border-radius: 18px; object-fit: contain; box-shadow: 0 10px 30px rgba(0,0,0,.4); }
 .about-name { font-family: var(--font-display); font-size: 19px; font-weight: 800; }

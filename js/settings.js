@@ -1,5 +1,5 @@
 /**
- * EchoArchive — Settings: темы + форматы + доступность + ссылки.
+ * EchoArchive — Settings: 9 тем + форматы + доступность.
  */
 window.Settings = {
     STORAGE_KEY: 'echoarchive_settings',
@@ -8,6 +8,10 @@ window.Settings = {
         { id: 'amoled', name: 'Pure Black',  bg: '#000000', accent: '#00ff66' },
         { id: 'ocean',  name: 'Ocean Blue',  bg: '#0a1420', accent: '#29b6ff' },
         { id: 'sunset', name: 'Sunset',      bg: '#160e1a', accent: '#ff7a59' },
+        { id: 'rose',   name: 'Rose',        bg: '#1a0e14', accent: '#ff5c8a' },
+        { id: 'amber',  name: 'Amber',       bg: '#18130a', accent: '#ffb020' },
+        { id: 'violet', name: 'Violet',      bg: '#140f1f', accent: '#a78bfa' },
+        { id: 'teal',   name: 'Teal',        bg: '#08171a', accent: '#14e0c0' },
         { id: 'light',  name: 'Light',       bg: '#f4f4f6', accent: '#16a34a' }
     ],
     FORMATS: [

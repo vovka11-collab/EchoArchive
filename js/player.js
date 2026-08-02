@@ -1,12 +1,11 @@
 /**
- * EchoArchive — Player + sleep timer.
+ * EchoArchive — Player (без таймера сна).
  * Трек содержит готовый url (releaseId+file). Legacy без file резолвятся через metadata.
  */
 window.Player = {
     audio: new Audio(),
     queue: [], currentIndex: -1, isPlaying: false,
     shuffleMode: false, repeatMode: 0, shuffleOrder: [],
-    sleep: { timer: null, remaining: 0, fading: false, baseVolume: 1 },
 
     init() {
         this.audio.preload = 'auto';
@@ -135,48 +134,5 @@ window.Player = {
         const key = window.App.trackKey(cur);
         document.querySelectorAll('.playlist-track-item[data-track-key="' + key + '"]').forEach(el => el.classList.add('playing'));
     },
-    getCurrentTrack() { return (this.currentIndex >= 0 && this.currentIndex < this.queue.length) ? this.queue[this.currentIndex] : null; },
-
-    /* ═══════════ SLEEP TIMER ═══════════ */
-    setSleepTimer(minutes) {
-        if (this.sleep.timer) { clearInterval(this.sleep.timer); this.sleep.timer = null; }
-        this.sleep.fading = false;
-        const ind = document.getElementById('sleep-indicator');
-        if (!minutes || minutes <= 0) {
-            this.sleep.remaining = 0;
-            if (ind) ind.hidden = true;
-            this.audio.volume = this.sleep.baseVolume || 1;
-            return;
-        }
-        this.sleep.baseVolume = this.audio.volume || 1;
-        this.sleep.remaining = minutes * 60;
-        if (ind) ind.hidden = false;
-        this.updateSleepIndicator();
-        this.sleep.timer = setInterval(() => this.sleepTick(), 1000);
-    },
-    sleepTick() {
-        this.sleep.remaining--;
-        if (this.sleep.remaining <= 10 && this.sleep.remaining > 0 && !this.sleep.fading) {
-            this.sleep.fading = true;
-        }
-        if (this.sleep.fading && this.sleep.remaining > 0) {
-            this.audio.volume = Math.max(0, (this.sleep.remaining / 10) * (this.sleep.baseVolume || 1));
-        }
-        if (this.sleep.remaining <= 0) {
-            clearInterval(this.sleep.timer); this.sleep.timer = null;
-            this.pause();
-            this.audio.volume = this.sleep.baseVolume || 1;
-            this.sleep.remaining = 0; this.sleep.fading = false;
-            const ind = document.getElementById('sleep-indicator'); if (ind) ind.hidden = true;
-            if (window.App) window.App.showToast('Спокойной ночи 🌙');
-            return;
-        }
-        this.updateSleepIndicator();
-    },
-    updateSleepIndicator() {
-        const t = document.getElementById('sleep-indicator-time'); if (!t) return;
-        const m = Math.floor(this.sleep.remaining / 60), s = this.sleep.remaining % 60;
-        t.textContent = m + ':' + (s < 10 ? '0' : '') + s;
-    },
-    getSleepMinutes() { return Math.ceil(this.sleep.remaining / 60); }
+    getCurrentTrack() { return (this.currentIndex >= 0 && this.currentIndex < this.queue.length) ? this.queue[this.currentIndex] : null; }
 };

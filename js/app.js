@@ -1,9 +1,11 @@
 /**
- * EchoArchive — App controller: навигация, рендер, модалки, инициализация живых слоёв.
+ * EchoArchive — App controller v0.5: навигация, рендер, миксы, модалки.
+ * firstPaint-флаг убирает мерцание каскада при повторной навигации.
  */
 window.App = {
     currentScreen: 'home',
     currentPlaylistId: null,
+    currentMixKey: null,
     previousScreen: 'home',
     _toastTimer: null,
     _addPayload: null,
@@ -14,6 +16,8 @@ window.App = {
         window.Ambient.init();
         window.Player.init();
         window.Search.init();
+        window.DailyMix.init();
+        window.Sync.init();
         window.Moments.init();
 
         this.initNavigation();
@@ -23,13 +27,17 @@ window.App = {
         this.initPlaylistMenu();
         this.initPlaylistActions();
         this.initAlbumActions();
+        this.initMixActions();
         this.initSettingsNav();
 
         const bp = document.getElementById('btn-back-playlist'); if (bp) bp.addEventListener('click', () => this.navigateBack());
         const ba = document.getElementById('btn-back-album');   if (ba) ba.addEventListener('click', () => this.navigateBack());
+        const bm = document.getElementById('btn-back-mix');     if (bm) bm.addEventListener('click', () => this.navigateBack());
         const bs = document.getElementById('btn-back-settings');if (bs) bs.addEventListener('click', () => this.navigateBack());
 
         this.refreshAllViews();
+        this.renderDailyMixes();
+        window.DailyMix.ready.then(() => this.renderDailyMixes());
         this.updateGreeting();
     },
 
@@ -52,8 +60,9 @@ window.App = {
     },
     openPlaylist(id) { this.previousScreen = this.currentScreen; this.currentPlaylistId = id; this.renderPlaylistDetail(id); this.switchScreen('playlist'); },
     openAlbum(id) { this.previousScreen = this.currentScreen; this.switchScreen('album'); window.Album.open(id); },
+    openMix(key) { this.previousScreen = this.currentScreen; this.currentMixKey = key; this.switchScreen('mix'); this.renderMix(key); },
     openSettings() { this.previousScreen = this.currentScreen; this.switchScreen('settings'); },
-    navigateBack() { this.currentPlaylistId = null; this.switchScreen(this.previousScreen || 'home', true); this.refreshAllViews(); },
+    navigateBack() { this.currentPlaylistId = null; this.currentMixKey = null; this.switchScreen(this.previousScreen || 'home', true); this.refreshAllViews(); },
     initSettingsNav() { const b = document.getElementById('btn-settings'); if (b) b.addEventListener('click', () => this.openSettings()); },
 
     refreshAllViews() {
@@ -62,6 +71,129 @@ window.App = {
         if (this.currentPlaylistId) this.renderPlaylistDetail(this.currentPlaylistId);
     },
 
+    /* ═══════════ МИКСЫ ═══════════ */
+    renderDailyMixes() {
+        const row = document.getElementById('mix-row');
+        const note = document.getElementById('mix-note');
+        if (!row) return;
+        const stale = window.DailyMix.isStale();
+        if (note) note.textContent = stale ? 'обновляется…' : 'обновлено сегодня';
+        row.innerHTML = '';
+        window.DailyMix.genres().forEach((g, i) => {
+            const tracks = window.DailyMix.get(g.key);
+            if (!tracks) { row.appendChild(this.mixSkeleton()); return; }
+            row.appendChild(this.mixCard(g, tracks, i));
+        });
+    },
+
+    mixSkeleton() {
+        const w = document.createElement('div'); w.className = 'mix-skeleton';
+        w.innerHTML = '<div class="skeleton"></div><div class="skeleton sk-line"></div>';
+        return w;
+    },
+
+    mixCard(genre, tracks, revealIdx) {
+        const card = document.createElement('div'); card.className = 'mix-card reveal';
+        card.style.animationDelay = (Math.min(revealIdx, 8) * 40) + 'ms';
+        const cover = document.createElement('div'); cover.className = 'mix-card-cover';
+        const covers = tracks.slice(0, 4).map(t => t.cover).filter(Boolean);
+        if (covers.length > 1) {
+            const m = document.createElement('div'); m.className = 'cover-mosaic';
+            covers.forEach(u => { const img = document.createElement('img'); img.src = u; img.alt = ''; img.loading = 'lazy'; img.onerror = function () { this.style.display = 'none'; }; m.appendChild(img); });
+            cover.appendChild(m);
+        } else if (covers.length === 1) {
+            const img = document.createElement('img'); img.src = covers[0]; img.alt = ''; img.onerror = function () { this.outerHTML = '<span class="material-icons">' + genre.icon + '</span>'; };
+            cover.appendChild(img);
+        } else {
+            cover.innerHTML = '<span class="material-icons">' + genre.icon + '</span>';
+        }
+        const badge = document.createElement('div'); badge.className = 'mix-badge';
+        badge.innerHTML = '<span class="material-icons">play_arrow</span>';
+        cover.appendChild(badge);
+        const name = document.createElement('div'); name.className = 'mix-card-name'; name.textContent = genre.label;
+        const sub = document.createElement('div'); sub.className = 'mix-card-sub';
+        sub.textContent = tracks.length ? (tracks.length + ' треков') : 'мало материала';
+        card.appendChild(cover); card.appendChild(name); card.appendChild(sub);
+        card.addEventListener('click', () => this.openMix(genre.key));
+        return card;
+    },
+
+    async renderMix(key) {
+        const genre = window.DailyMix.genres().find(g => g.key === key);
+        const label = genre ? genre.label : 'Микс';
+        const set = (i, v) => { const e = document.getElementById(i); if (e) e.textContent = v; };
+        set('mix-detail-name', label); set('mix-name-large', label);
+        set('mix-desc', 'Ежедневная подборка лучшего · Archive.org');
+
+        const tc = document.getElementById('mix-tracks');
+        const empty = document.getElementById('empty-mix-tracks');
+        tc.innerHTML = '<div class="loading-spinner"></div>'; if (empty) empty.style.display = 'none';
+
+        let tracks = window.DailyMix.get(key);
+        if (!tracks) tracks = await window.DailyMix.ensure(key);
+
+        set('mix-track-count', window.Playlists.pluralTracks(tracks.length));
+
+        const cov = document.getElementById('mix-cover-large');
+        if (cov) {
+            const covers = tracks.slice(0, 4).map(t => t.cover).filter(Boolean); cov.innerHTML = '';
+            if (covers.length > 1) { const m = document.createElement('div'); m.className = 'cover-mosaic'; covers.forEach(u => { const img = document.createElement('img'); img.src = u; img.alt = ''; img.onerror = function () { this.style.display = 'none'; }; m.appendChild(img); }); cov.appendChild(m); }
+            else if (covers.length === 1) { const img = document.createElement('img'); img.src = covers[0]; img.alt = ''; img.onerror = function () { this.outerHTML = '<span class="material-icons">auto_awesome</span>'; }; cov.appendChild(img); }
+            else cov.innerHTML = '<span class="material-icons">auto_awesome</span>';
+        }
+
+        if (!tracks.length) { tc.innerHTML = ''; if (empty) empty.style.display = 'flex'; return; }
+        if (empty) empty.style.display = 'none';
+        tc.innerHTML = '';
+        tracks.forEach((t, i) => tc.appendChild(this.renderMixTrackRow(t, i, tracks, i)));
+        window.Player.highlightCurrent();
+    },
+
+    renderMixTrackRow(track, index, queue, revealIdx) {
+        const item = document.createElement('div'); item.className = 'playlist-track-item reveal';
+        item.style.animationDelay = (Math.min(revealIdx, 10) * 30) + 'ms';
+        item.setAttribute('data-track-key', this.trackKey(track));
+        const idx = document.createElement('span'); idx.className = 'pt-index';
+        idx.innerHTML = '<span class="pt-num">' + (index + 1) + '</span><span class="eq"><i></i><i></i><i></i><i></i></span>';
+        const img = document.createElement('img'); img.src = track.cover || 'assets/icons/logo-app.png'; img.className = 'playlist-track-cover'; img.alt = ''; img.loading = 'lazy';
+        img.onerror = function () { this.src = 'assets/icons/logo-app.png'; };
+        const info = document.createElement('div'); info.className = 'playlist-track-info';
+        info.innerHTML = '<div class="playlist-track-title">' + this.esc(track.title) + '</div><div class="playlist-track-artist">' + this.esc(track.artist) + '</div>';
+        const addBtn = document.createElement('button'); addBtn.className = 'playlist-track-remove'; addBtn.title = 'Добавить в плейлист';
+        addBtn.style.opacity = '1'; addBtn.style.color = 'var(--text-secondary)';
+        addBtn.innerHTML = '<span class="material-icons">playlist_add</span>';
+        item.appendChild(idx); item.appendChild(img); item.appendChild(info); item.appendChild(addBtn);
+        item.addEventListener('click', e => { if (e.target.closest('.playlist-track-remove')) return; window.Player.loadAndPlay(track, queue, index); });
+        addBtn.addEventListener('click', e => { e.stopPropagation(); this.openAddModal([track]); });
+        return item;
+    },
+
+    initMixActions() {
+        const p = document.getElementById('btn-play-mix'); const s = document.getElementById('btn-shuffle-mix');
+        const a = document.getElementById('btn-add-mix'); const sr = document.getElementById('btn-mix-search');
+        if (p) p.addEventListener('click', () => this.playMix(false));
+        if (s) s.addEventListener('click', () => this.playMix(true));
+        if (a) a.addEventListener('click', () => this.addMixToPlaylist());
+        if (sr) sr.addEventListener('click', () => {
+            const genre = window.DailyMix.genres().find(g => g.key === this.currentMixKey);
+            const input = document.getElementById('search-input');
+            if (input && genre) input.value = genre.label;
+            this.switchScreen('search', true); window.Search.performSearch();
+        });
+    },
+    playMix(shuffle) {
+        const tracks = window.DailyMix.get(this.currentMixKey) || [];
+        if (!tracks.length) { this.showToast('Подборка пуста'); return; }
+        if (shuffle && !window.Player.shuffleMode) window.Player.toggleShuffle();
+        window.Player.loadAndPlay(tracks[0], tracks, 0);
+    },
+    addMixToPlaylist() {
+        const tracks = window.DailyMix.get(this.currentMixKey) || [];
+        if (!tracks.length) { this.showToast('Подборка пуста'); return; }
+        this.openAddModal(tracks);
+    },
+
+    /* ═══════════ рендер плейлистов ═══════════ */
     renderHomePlaylists() {
         const pls = window.Playlists.getAll();
         const grid = document.getElementById('home-playlists');
@@ -73,14 +205,17 @@ window.App = {
 
         if (!pls.length) {
             grid.style.display = 'none'; if (empty) empty.style.display = 'flex';
-            if (quick) quick.innerHTML = ''; if (recSec) recSec.style.display = 'none'; return;
+            if (quick) { quick.innerHTML = ''; quick.dataset.filled = ''; }
+            if (recSec) recSec.style.display = 'none'; return;
         }
         grid.style.display = 'grid'; if (empty) empty.style.display = 'none';
 
         if (quick) {
+            const animate = !quick.dataset.filled;
             quick.innerHTML = '';
             pls.slice(0, 4).forEach((pl, i) => {
-                const item = document.createElement('div'); item.className = 'quick-item reveal'; item.style.animationDelay = (i * 40) + 'ms';
+                const item = document.createElement('div'); item.className = 'quick-item';
+                if (animate) { item.classList.add('reveal'); item.style.animationDelay = (i * 40) + 'ms'; }
                 const urls = window.Playlists.getCoverUrls(pl);
                 if (urls.length) {
                     const img = document.createElement('img'); img.src = urls[0]; img.className = 'quick-item-cover'; img.alt = '';
@@ -90,23 +225,31 @@ window.App = {
                 const nm = document.createElement('span'); nm.className = 'quick-item-name'; nm.textContent = pl.name; item.appendChild(nm);
                 item.addEventListener('click', () => this.openPlaylist(pl.id)); quick.appendChild(item);
             });
+            quick.dataset.filled = '1';
         }
         if (recSec && recGrid) {
             const recent = [...pls].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 4);
             recSec.style.display = recent.length ? 'block' : 'none';
-            recGrid.innerHTML = ''; recent.forEach((pl, i) => recGrid.appendChild(this.createPlaylistCard(pl, i)));
+            const animateR = !recGrid.dataset.filled; recGrid.innerHTML = '';
+            recent.forEach((pl, i) => recGrid.appendChild(this.createPlaylistCard(pl, animateR ? i : -1)));
+            recGrid.dataset.filled = '1';
         }
-        grid.innerHTML = ''; pls.forEach((pl, i) => grid.appendChild(this.createPlaylistCard(pl, i)));
+        const animateG = !grid.dataset.filled;
+        grid.innerHTML = '';
+        pls.forEach((pl, i) => grid.appendChild(this.createPlaylistCard(pl, animateG ? i : -1)));
+        grid.dataset.filled = '1';
     },
 
     renderLibraryPlaylists() {
         const pls = window.Playlists.getAll();
         const list = document.getElementById('library-playlists');
         const empty = document.getElementById('empty-library'); if (!list) return;
-        if (!pls.length) { list.style.display = 'none'; if (empty) empty.style.display = 'flex'; return; }
-        list.style.display = 'flex'; if (empty) empty.style.display = 'none'; list.innerHTML = '';
+        if (!pls.length) { list.style.display = 'none'; list.dataset.filled = ''; if (empty) empty.style.display = 'flex'; return; }
+        list.style.display = 'flex'; if (empty) empty.style.display = 'none';
+        const animate = !list.dataset.filled; list.innerHTML = '';
         pls.forEach((pl, i) => {
-            const item = document.createElement('div'); item.className = 'playlist-list-item reveal'; item.style.animationDelay = (Math.min(i, 10) * 35) + 'ms';
+            const item = document.createElement('div'); item.className = 'playlist-list-item';
+            if (animate) { item.classList.add('reveal'); item.style.animationDelay = (Math.min(i, 10) * 35) + 'ms'; }
             const cov = document.createElement('div'); cov.className = 'playlist-list-cover';
             const urls = window.Playlists.getCoverUrls(pl);
             if (urls.length) { const img = document.createElement('img'); img.src = urls[0]; img.alt = ''; img.onerror = function () { this.outerHTML = '<span class="material-icons">music_note</span>'; }; cov.appendChild(img); }
@@ -116,6 +259,7 @@ window.App = {
             item.appendChild(cov); item.appendChild(info);
             item.addEventListener('click', () => this.openPlaylist(pl.id)); list.appendChild(item);
         });
+        list.dataset.filled = '1';
     },
 
     renderPlaylistDetail(id) {
@@ -134,15 +278,17 @@ window.App = {
         }
 
         const tc = document.getElementById('playlist-tracks'); const empty = document.getElementById('empty-playlist-tracks'); if (!tc) return;
-        if (!pl.tracks.length) { tc.innerHTML = ''; if (empty) empty.style.display = 'flex'; return; }
-        if (empty) empty.style.display = 'none'; tc.innerHTML = '';
-        pl.tracks.forEach((t, i) => tc.appendChild(this.renderPlaylistTrackRow(pl.id, t, i, pl.tracks, i)));
+        if (!pl.tracks.length) { tc.innerHTML = ''; tc.dataset.filled = ''; if (empty) empty.style.display = 'flex'; return; }
+        if (empty) empty.style.display = 'none';
+        const animate = !tc.dataset.filled; tc.innerHTML = '';
+        pl.tracks.forEach((t, i) => tc.appendChild(this.renderPlaylistTrackRow(pl.id, t, i, pl.tracks, animate ? i : -1)));
+        tc.dataset.filled = '1';
         window.Player.highlightCurrent();
     },
 
     renderPlaylistTrackRow(playlistId, track, index, queue, revealIdx) {
-        const item = document.createElement('div'); item.className = 'playlist-track-item reveal';
-        item.style.animationDelay = (Math.min(revealIdx, 10) * 35) + 'ms';
+        const item = document.createElement('div'); item.className = 'playlist-track-item';
+        if (revealIdx >= 0) { item.classList.add('reveal'); item.style.animationDelay = (Math.min(revealIdx, 10) * 35) + 'ms'; }
         item.setAttribute('data-track-key', this.trackKey(track));
         const idx = document.createElement('span'); idx.className = 'pt-index';
         idx.innerHTML = '<span class="pt-num">' + (index + 1) + '</span><span class="eq"><i></i><i></i><i></i><i></i></span>';
@@ -160,123 +306,8 @@ window.App = {
     },
 
     createPlaylistCard(pl, revealIdx) {
-        const card = document.createElement('div'); card.className = 'playlist-card reveal';
-        card.style.animationDelay = (Math.min(revealIdx || 0, 8) * 45) + 'ms';
+        const card = document.createElement('div'); card.className = 'playlist-card';
+        if (revealIdx >= 0) { card.classList.add('reveal'); card.style.animationDelay = (Math.min(revealIdx, 8) * 45) + 'ms'; }
         const cov = document.createElement('div'); cov.className = 'playlist-card-cover';
         const urls = window.Playlists.getCoverUrls(pl);
-        if (urls.length > 1) { const m = document.createElement('div'); m.className = 'cover-mosaic'; urls.forEach(u => { const img = document.createElement('img'); img.src = u; img.alt = ''; img.onerror = function () { this.style.display = 'none'; }; m.appendChild(img); }); cov.appendChild(m); }
-        else if (urls.length === 1) { const img = document.createElement('img'); img.src = urls[0]; img.alt = ''; img.onerror = function () { this.outerHTML = '<span class="material-icons">music_note</span>'; }; cov.appendChild(img); }
-        else cov.innerHTML = '<span class="material-icons">music_note</span>';
-        const nm = document.createElement('div'); nm.className = 'playlist-card-name'; nm.textContent = pl.name;
-        const ct = document.createElement('div'); ct.className = 'playlist-card-count'; ct.textContent = window.Playlists.pluralTracks(pl.tracks.length);
-        card.appendChild(cov); card.appendChild(nm); card.appendChild(ct);
-        card.addEventListener('click', () => this.openPlaylist(pl.id)); return card;
-    },
-
-    bindCreateButtons() { ['btn-create-home', 'btn-create-empty', 'btn-create-library', 'btn-create-library-empty'].forEach(id => { const b = document.getElementById(id); if (b) b.addEventListener('click', () => this.openCreateModal()); }); },
-    initCreateModal() {
-        const modal = document.getElementById('modal-create');
-        const cancel = document.getElementById('btn-cancel-create');
-        const confirm = document.getElementById('btn-confirm-create');
-        const name = document.getElementById('input-playlist-name');
-        if (cancel) cancel.addEventListener('click', () => this.closeCreateModal());
-        if (modal) modal.addEventListener('click', e => { if (e.target === modal) this.closeCreateModal(); });
-        if (confirm) confirm.addEventListener('click', () => {
-            const n = name ? name.value.trim() : ''; const d = document.getElementById('input-playlist-desc'); const desc = d ? d.value.trim() : '';
-            if (!n) { if (name) name.focus(); return; }
-            window.Playlists.create(n, desc); this.closeCreateModal(); this.refreshAllViews(); this.showToast('Плейлист создан');
-        });
-        if (name) name.addEventListener('keypress', e => { if (e.key === 'Enter') { e.preventDefault(); if (confirm) confirm.click(); } });
-    },
-    openCreateModal() {
-        const modal = document.getElementById('modal-create'); const n = document.getElementById('input-playlist-name'); const d = document.getElementById('input-playlist-desc');
-        if (n) n.value = ''; if (d) d.value = ''; if (modal) modal.style.display = 'flex'; setTimeout(() => { if (n) n.focus(); }, 300);
-    },
-    closeCreateModal() { const m = document.getElementById('modal-create'); if (m) m.style.display = 'none'; },
-
-    initAddModal() {
-        const modal = document.getElementById('modal-add-to');
-        const cancel = document.getElementById('btn-cancel-add');
-        if (cancel) cancel.addEventListener('click', () => this.closeAddModal());
-        if (modal) modal.addEventListener('click', e => { if (e.target === modal) this.closeAddModal(); });
-    },
-    openAddModal(tracks) {
-        this._addPayload = tracks || [];
-        const modal = document.getElementById('modal-add-to'); const list = document.getElementById('add-to-list'); if (!modal || !list) return;
-        const pls = window.Playlists.getAll();
-        if (!pls.length) {
-            list.innerHTML = '<div class="empty-state" style="padding:24px 0;"><p style="margin-bottom:12px;">Сначала создайте плейлист</p><button class="btn-primary" id="btn-create-from-add">Создать</button></div>';
-            const cb = list.querySelector('#btn-create-from-add'); if (cb) cb.addEventListener('click', () => { this.closeAddModal(); this.openCreateModal(); });
-        } else {
-            list.innerHTML = '';
-            pls.forEach(pl => {
-                const btn = document.createElement('button'); btn.className = 'add-to-item';
-                btn.innerHTML = '<span class="material-icons">playlist_add</span><span>' + this.esc(pl.name) + '</span>';
-                btn.addEventListener('click', () => {
-                    const added = window.Playlists.addTracks(pl.id, this._addPayload);
-                    this.closeAddModal(); this.refreshAllViews();
-                    this.showToast(added ? ('Добавлено: ' + added) : 'Уже в плейлисте');
-                });
-                list.appendChild(btn);
-            });
-        }
-        modal.style.display = 'flex';
-    },
-    closeAddModal() { const m = document.getElementById('modal-add-to'); if (m) m.style.display = 'none'; this._addPayload = null; },
-
-    initPlaylistMenu() {
-        const mb = document.getElementById('btn-playlist-menu'); const modal = document.getElementById('modal-playlist-menu');
-        const cancel = document.getElementById('btn-cancel-menu'); const ren = document.getElementById('menu-rename'); const del = document.getElementById('menu-delete');
-        if (mb) mb.addEventListener('click', () => { if (modal) modal.style.display = 'flex'; });
-        if (cancel) cancel.addEventListener('click', () => { if (modal) modal.style.display = 'none'; });
-        if (modal) modal.addEventListener('click', e => { if (e.target === modal) modal.style.display = 'none'; });
-        if (ren) ren.addEventListener('click', () => { if (modal) modal.style.display = 'none'; this.renamePlaylist(); });
-        if (del) del.addEventListener('click', () => { if (modal) modal.style.display = 'none'; this.deletePlaylist(); });
-    },
-    renamePlaylist() {
-        const pl = window.Playlists.getById(this.currentPlaylistId); if (!pl) return;
-        const n = prompt('Новое название:', pl.name); if (n && n.trim()) { window.Playlists.rename(this.currentPlaylistId, n); this.renderPlaylistDetail(this.currentPlaylistId); this.refreshAllViews(); this.showToast('Переименовано'); }
-    },
-    deletePlaylist() {
-        const pl = window.Playlists.getById(this.currentPlaylistId); if (!pl) return;
-        if (confirm('Удалить плейлист «' + pl.name + '»?')) { window.Playlists.delete(this.currentPlaylistId); this.showToast('Плейлист удалён'); this.navigateBack(); }
-    },
-
-    initPlaylistActions() {
-        const p = document.getElementById('btn-play-playlist'); const s = document.getElementById('btn-shuffle-playlist');
-        if (p) p.addEventListener('click', () => this.playPlaylist(false));
-        if (s) s.addEventListener('click', () => this.playPlaylist(true));
-    },
-    playPlaylist(shuffle) {
-        const tracks = window.Playlists.getTracks(this.currentPlaylistId);
-        if (!tracks.length) { this.showToast('Плейлист пуст'); return; }
-        if (shuffle && !window.Player.shuffleMode) window.Player.toggleShuffle();
-        window.Player.loadAndPlay(tracks[0], tracks, 0);
-    },
-    initAlbumActions() {
-        const p = document.getElementById('btn-play-album'); const s = document.getElementById('btn-shuffle-album'); const a = document.getElementById('btn-add-album');
-        if (p) p.addEventListener('click', () => window.Album.playAll(false));
-        if (s) s.addEventListener('click', () => window.Album.playAll(true));
-        if (a) a.addEventListener('click', () => window.Album.addAllToPlaylist());
-    },
-
-    updateGreeting() {
-        const el = document.getElementById('greeting-text'); const kicker = document.getElementById('greeting-kicker');
-        if (!el) return;
-        const now = new Date(); const h = now.getHours();
-        el.textContent = (h >= 5 && h < 12) ? 'Доброе утро' : (h >= 12 && h < 18) ? 'Добрый день' : (h >= 18 && h < 23) ? 'Добрый вечер' : 'Доброй ночи';
-        if (kicker) {
-            const days = ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'];
-            const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
-            kicker.textContent = 'сегодня · ' + now.getDate() + ' ' + months[now.getMonth()] + ', ' + days[now.getDay()];
-        }
-    },
-
-    showToast(msg) {
-        const t = document.getElementById('toast'); if (!t) return;
-        t.textContent = msg; t.classList.add('show'); clearTimeout(this._toastTimer);
-        this._toastTimer = setTimeout(() => { t.classList.remove('show'); }, 2500);
-    }
-};
-
-document.addEventListener('DOMContentLoaded', () => window.App.init());
+        if (urls.length > 1) { const m = document.create

@@ -27,7 +27,7 @@
             </header>
 
             <div class="home-content">
-                <p class="greeting-kicker" id="greeting-kicker">сегодня · суббота</p>
+                <p class="greeting-kicker" id="greeting-kicker">сегодня</p>
                 <h2 class="greeting" id="greeting-text">Привет</h2>
 
                 <div class="continue-card" id="continue-card" hidden>
@@ -41,6 +41,11 @@
                 </div>
 
                 <div class="moments" id="moments-row"></div>
+
+                <div class="section-block">
+                    <div class="section-header"><h3>Миксы на сегодня</h3><span class="section-note" id="mix-note"></span></div>
+                    <div class="mix-row" id="mix-row"></div>
+                </div>
 
                 <div class="quick-playlists" id="quick-playlists"></div>
 
@@ -162,6 +167,34 @@
             </div>
         </section>
 
+        <!-- ═══════════ МИКС НА СЕГОДНЯ ═══════════ -->
+        <section id="screen-mix" class="screen">
+            <header class="playlist-detail-header">
+                <button class="back-btn" id="btn-back-mix"><span class="material-icons">arrow_back</span></button>
+                <span class="playlist-detail-title" id="mix-detail-name">Микс</span>
+                <button class="btn-more" id="btn-add-mix" title="Добавить микс в плейлист"><span class="material-icons">playlist_add</span></button>
+            </header>
+            <div class="playlist-hero">
+                <div class="playlist-cover-large" id="mix-cover-large"><span class="material-icons">auto_awesome</span></div>
+                <div class="playlist-meta">
+                    <span class="playlist-type-label">Микс на сегодня</span>
+                    <h2 class="playlist-name-large" id="mix-name-large">Название</h2>
+                    <p class="playlist-desc" id="mix-desc"></p>
+                    <p class="playlist-track-count" id="mix-track-count">0 треков</p>
+                </div>
+            </div>
+            <div class="playlist-actions">
+                <button class="btn-play-large" id="btn-play-mix"><span class="material-icons">play_arrow</span></button>
+                <button class="btn-shuffle-large" id="btn-shuffle-mix"><span class="material-icons">shuffle</span></button>
+            </div>
+            <div class="playlist-tracks" id="mix-tracks"></div>
+            <div class="empty-state" id="empty-mix-tracks" style="display:none;">
+                <span class="material-icons empty-icon">sentiment_dissatisfied</span>
+                <p>Источник пока не собрал подборку по этому жанру. Попробуйте поиск вручную.</p>
+                <button class="btn-secondary" id="btn-mix-search">Искать жанр</button>
+            </div>
+        </section>
+
         <!-- ═══════════ НАСТРОЙКИ ═══════════ -->
         <section id="screen-settings" class="screen">
             <header class="playlist-detail-header">
@@ -184,6 +217,10 @@
                     <div class="formats-list" id="a11y-list"></div>
                 </div>
                 <div class="settings-group">
+                    <h4 class="settings-group-title">Резервная копия и синхронизация</h4>
+                    <div id="sync-section"></div>
+                </div>
+                <div class="settings-group">
                     <h4 class="settings-group-title">Проект</h4>
                     <a class="settings-link" id="link-github" href="https://github.com/vovka11-collab" target="_blank" rel="noopener">
                         <span class="material-icons">code</span>
@@ -199,7 +236,7 @@
                 <div class="settings-about">
                     <img src="assets/icons/logo-app.png" alt="Logo" class="about-logo">
                     <div class="about-name">EchoArchive</div>
-                    <div class="about-ver">версия 0.4.0 · музыка из Archive.org</div>
+                    <div class="about-ver">версия 0.5.0 · музыка из Archive.org</div>
                 </div>
             </div>
         </section>
@@ -210,12 +247,15 @@
                 <input type="range" id="progress-bar" value="0" max="100" class="progress-bar" step="0.1">
             </div>
             <div class="player-content">
-                <div class="cover-container"><img id="player-cover" src="assets/icons/logo-app.png" alt="Cover" class="player-cover"></div>
+                <div class="vinyl" id="player-vinyl">
+                    <div class="vinyl-grooves"></div>
+                    <img id="player-cover" src="assets/icons/logo-app.png" alt="Cover" class="vinyl-label">
+                    <div class="vinyl-hole"></div>
+                </div>
                 <div class="player-text">
                     <div id="player-title" class="player-title">Не выбран трек</div>
                     <div class="player-subline">
                         <span id="player-artist" class="player-artist">EchoArchive</span>
-                        <span id="sleep-indicator" class="sleep-indicator" hidden><span class="material-icons">bedtime</span><b id="sleep-indicator-time">0:00</b></span>
                     </div>
                 </div>
                 <div class="player-controls">
@@ -269,16 +309,6 @@
             </div>
         </div>
 
-        <div class="modal-overlay" id="modal-sleep" style="display:none;">
-            <div class="modal-sheet">
-                <div class="modal-handle"></div>
-                <h3 class="modal-title">Таймер сна</h3>
-                <p class="settings-hint">Музыка плавно стихнет и остановится.</p>
-                <div class="sleep-grid" id="sleep-grid"></div>
-                <div class="modal-actions"><button class="btn-secondary" id="btn-cancel-sleep">Закрыть</button></div>
-            </div>
-        </div>
-
         <div class="toast" id="toast" style="display:none;"></div>
     </div>
 
@@ -287,6 +317,8 @@
     <script src="js/player.js"></script>
     <script src="js/album.js"></script>
     <script src="js/search.js"></script>
+    <script src="js/dailymix.js"></script>
+    <script src="js/sync.js"></script>
     <script src="js/settings.js"></script>
     <script src="js/moments.js"></script>
     <script src="js/app.js"></script>
