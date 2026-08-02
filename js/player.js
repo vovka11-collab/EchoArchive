@@ -1,15 +1,16 @@
 /**
- * EchoArchive — Player.
- * Трек уже содержит готовый url (releaseId+file). Legacy-треки без file
- * резолвятся через metadata (старое поведение).
+ * EchoArchive — Player + sleep timer.
+ * Трек содержит готовый url (releaseId+file). Legacy без file резолвятся через metadata.
  */
 window.Player = {
     audio: new Audio(),
     queue: [], currentIndex: -1, isPlaying: false,
     shuffleMode: false, repeatMode: 0, shuffleOrder: [],
+    sleep: { timer: null, remaining: 0, fading: false, baseVolume: 1 },
 
     init() {
         this.audio.preload = 'auto';
+        this.audio.volume = 1;
         this.audio.addEventListener('timeupdate', () => this.onTimeUpdate());
         this.audio.addEventListener('ended', () => this.onEnded());
         this.audio.addEventListener('error', () => this.onError());
@@ -48,19 +49,20 @@ window.Player = {
 
         try {
             let url = this.buildUrl(track);
-            if (!url) url = await this.legacyResolve(track);   // старые записи без file
+            if (!url) url = await this.legacyResolve(track);
             if (!url) { if (titleEl) titleEl.textContent = 'Нет подходящего аудиофайла'; return; }
             track.url = url;
             this.audio.src = url; this.audio.load();
             if (titleEl) titleEl.textContent = track.title || 'Без названия';
+            this.saveLast(track);
             this.play(); this.highlightCurrent();
+            if (window.Moments) window.Moments.renderContinue();
         } catch (err) {
             console.error('Player load', err);
             if (titleEl) titleEl.textContent = 'Ошибка загрузки';
         }
     },
 
-    /** fallback для legacy-треков: metadata → первый файл по предпочтениям форматов */
     async legacyResolve(track) {
         const id = track.releaseId || track.id; if (!id) return null;
         try {
@@ -73,8 +75,16 @@ window.Player = {
         } catch (e) { return null; }
     },
 
-    play() { this.audio.play().then(() => { this.isPlaying = true; this.updatePlayIcon(); }).catch(e => console.error('play()', e)); },
-    pause() { this.audio.pause(); this.isPlaying = false; this.updatePlayIcon(); },
+    saveLast(track) {
+        try { localStorage.setItem('echoarchive_last_track', JSON.stringify({
+            releaseId: track.releaseId || track.id || '', file: track.file || null,
+            title: track.title, artist: track.artist, cover: track.cover,
+            format: track.format || '', length: track.length || 0, url: track.url || null
+        })); } catch (e) {}
+    },
+
+    play() { this.audio.play().then(() => { this.isPlaying = true; this.updatePlayIcon(); document.body.classList.add('is-playing'); }).catch(e => console.error('play()', e)); },
+    pause() { this.audio.pause(); this.isPlaying = false; this.updatePlayIcon(); document.body.classList.remove('is-playing'); },
     togglePlay() { if (!this.audio.src) return; this.isPlaying ? this.pause() : this.play(); },
 
     next() {
@@ -117,7 +127,7 @@ window.Player = {
     onError() { this.setLoading(false); const t = document.getElementById('player-title'); if (t) t.textContent = 'Ошибка воспроизведения'; },
     updatePlayIcon() { const ic = document.querySelector('#play-btn .material-icons'); if (ic) ic.textContent = this.isPlaying ? 'pause' : 'play_arrow'; },
     setLoading(l) { const ic = document.querySelector('#play-btn .material-icons'); if (l && ic) ic.textContent = 'hourglass_empty'; else this.updatePlayIcon(); },
-    showBar() { const b = document.getElementById('player-bar'); if (b) b.style.display = 'block'; },
+    showBar() { const b = document.getElementById('player-bar'); if (b) { b.style.display = 'block'; requestAnimationFrame(() => b.classList.add('shown')); } },
 
     highlightCurrent() {
         document.querySelectorAll('.playlist-track-item.playing').forEach(el => el.classList.remove('playing'));
@@ -125,5 +135,48 @@ window.Player = {
         const key = window.App.trackKey(cur);
         document.querySelectorAll('.playlist-track-item[data-track-key="' + key + '"]').forEach(el => el.classList.add('playing'));
     },
-    getCurrentTrack() { return (this.currentIndex >= 0 && this.currentIndex < this.queue.length) ? this.queue[this.currentIndex] : null; }
+    getCurrentTrack() { return (this.currentIndex >= 0 && this.currentIndex < this.queue.length) ? this.queue[this.currentIndex] : null; },
+
+    /* ═══════════ SLEEP TIMER ═══════════ */
+    setSleepTimer(minutes) {
+        if (this.sleep.timer) { clearInterval(this.sleep.timer); this.sleep.timer = null; }
+        this.sleep.fading = false;
+        const ind = document.getElementById('sleep-indicator');
+        if (!minutes || minutes <= 0) {
+            this.sleep.remaining = 0;
+            if (ind) ind.hidden = true;
+            this.audio.volume = this.sleep.baseVolume || 1;
+            return;
+        }
+        this.sleep.baseVolume = this.audio.volume || 1;
+        this.sleep.remaining = minutes * 60;
+        if (ind) ind.hidden = false;
+        this.updateSleepIndicator();
+        this.sleep.timer = setInterval(() => this.sleepTick(), 1000);
+    },
+    sleepTick() {
+        this.sleep.remaining--;
+        if (this.sleep.remaining <= 10 && this.sleep.remaining > 0 && !this.sleep.fading) {
+            this.sleep.fading = true;
+        }
+        if (this.sleep.fading && this.sleep.remaining > 0) {
+            this.audio.volume = Math.max(0, (this.sleep.remaining / 10) * (this.sleep.baseVolume || 1));
+        }
+        if (this.sleep.remaining <= 0) {
+            clearInterval(this.sleep.timer); this.sleep.timer = null;
+            this.pause();
+            this.audio.volume = this.sleep.baseVolume || 1;
+            this.sleep.remaining = 0; this.sleep.fading = false;
+            const ind = document.getElementById('sleep-indicator'); if (ind) ind.hidden = true;
+            if (window.App) window.App.showToast('Спокойной ночи 🌙');
+            return;
+        }
+        this.updateSleepIndicator();
+    },
+    updateSleepIndicator() {
+        const t = document.getElementById('sleep-indicator-time'); if (!t) return;
+        const m = Math.floor(this.sleep.remaining / 60), s = this.sleep.remaining % 60;
+        t.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+    },
+    getSleepMinutes() { return Math.ceil(this.sleep.remaining / 60); }
 };

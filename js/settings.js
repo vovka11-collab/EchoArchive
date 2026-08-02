@@ -1,5 +1,5 @@
 /**
- * EchoArchive — Settings: темы + форматы + ссылки.
+ * EchoArchive — Settings: темы + форматы + доступность + ссылки.
  */
 window.Settings = {
     STORAGE_KEY: 'echoarchive_settings',
@@ -18,18 +18,17 @@ window.Settings = {
         { key: 'wav',  name: 'WAV',        ext: ['.wav'] },
         { key: 'aac',  name: 'AAC / M4A',  ext: ['.m4a', '.mp4', '.aac'] }
     ],
-    // маппинг key -> массив расширений (без точек) для album.js
-    get FORMAT_EXT() {
-        const m = {}; this.FORMATS.forEach(f => { m[f.key] = f.ext.map(e => e.replace('.', '')); }); return m;
-    },
+    get FORMAT_EXT() { const m = {}; this.FORMATS.forEach(f => { m[f.key] = f.ext.map(e => e.replace('.', '')); }); return m; },
 
-    data: { theme: 'dark', formats: null },
+    data: { theme: 'dark', formats: null, reduceMotion: false },
 
     init() {
         this.load();
         this.applyTheme(this.data.theme);
+        this.applyReduceMotion(this.data.reduceMotion);
         this.renderThemes();
         this.renderFormats();
+        this.renderA11y();
     },
 
     load() {
@@ -37,11 +36,11 @@ window.Settings = {
             const s = JSON.parse(localStorage.getItem(this.STORAGE_KEY) || '{}');
             this.data.theme = s.theme || 'dark';
             this.data.formats = s.formats || this.defaultFormats();
-        } catch (e) { this.data.theme = 'dark'; this.data.formats = this.defaultFormats(); }
+            this.data.reduceMotion = !!s.reduceMotion;
+        } catch (e) { this.data.theme = 'dark'; this.data.formats = this.defaultFormats(); this.data.reduceMotion = false; }
     },
     defaultFormats() { const o = {}; this.FORMATS.forEach(f => o[f.key] = true); return o; },
     save() { try { localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.data)); } catch (e) {} },
-
     getFormats() { return this.data.formats; },
 
     applyTheme(id) {
@@ -50,6 +49,10 @@ window.Settings = {
         const th = this.THEMES.find(t => t.id === id);
         if (meta && th) meta.setAttribute('content', th.bg);
     },
+    applyReduceMotion(on) {
+        if (on) document.documentElement.setAttribute('data-reduce-motion', 'on');
+        else document.documentElement.removeAttribute('data-reduce-motion');
+    },
 
     renderThemes() {
         const grid = document.getElementById('themes-grid'); if (!grid) return;
@@ -57,9 +60,7 @@ window.Settings = {
         this.THEMES.forEach(t => {
             const btn = document.createElement('button');
             btn.className = 'theme-opt' + (t.id === this.data.theme ? ' active' : '');
-            btn.innerHTML =
-                '<div class="theme-preview" style="background:' + t.bg + ';">' +
-                '<span class="dot" style="background:' + t.accent + ';"></span></div>' +
+            btn.innerHTML = '<div class="theme-preview" style="background:' + t.bg + ';"><span class="dot" style="background:' + t.accent + ';color:' + t.accent + ';"></span></div>' +
                 '<div class="theme-opt-name">' + t.name + '</div>';
             btn.addEventListener('click', () => {
                 this.data.theme = t.id; this.applyTheme(t.id); this.save();
@@ -78,10 +79,7 @@ window.Settings = {
             const on = !!this.data.formats[f.key];
             const row = document.createElement('div');
             row.className = 'format-row' + (on ? ' on' : '');
-            row.innerHTML =
-                '<div class="fr-info"><div class="fr-name">' + f.name + '</div>' +
-                '<div class="fr-ext">' + f.ext.join('  ') + '</div></div>' +
-                '<div class="format-toggle"></div>';
+            row.innerHTML = '<div class="fr-info"><div class="fr-name">' + f.name + '</div><div class="fr-ext">' + f.ext.join('  ') + '</div></div><div class="format-toggle"></div>';
             row.addEventListener('click', () => {
                 this.data.formats[f.key] = !this.data.formats[f.key];
                 row.classList.toggle('on', this.data.formats[f.key]);
@@ -90,5 +88,20 @@ window.Settings = {
             });
             list.appendChild(row);
         });
+    },
+
+    renderA11y() {
+        const list = document.getElementById('a11y-list'); if (!list) return;
+        list.innerHTML = '';
+        const row = document.createElement('div');
+        row.className = 'format-row' + (this.data.reduceMotion ? ' on' : '');
+        row.innerHTML = '<div class="fr-info"><div class="fr-name">Уменьшить анимации</div><div class="fr-ext">Для чувствительности к движению</div></div><div class="format-toggle"></div>';
+        row.addEventListener('click', () => {
+            this.data.reduceMotion = !this.data.reduceMotion;
+            row.classList.toggle('on', this.data.reduceMotion);
+            this.applyReduceMotion(this.data.reduceMotion);
+            this.save();
+        });
+        list.appendChild(row);
     }
 };

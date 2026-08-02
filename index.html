@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>EchoArchive</title>
-    <script>(function(){try{var s=JSON.parse(localStorage.getItem('echoarchive_settings')||'{}');if(s&&s.theme)document.documentElement.setAttribute('data-theme',s.theme);}catch(e){}})();</script>
+    <script>(function(){try{var s=JSON.parse(localStorage.getItem('echoarchive_settings')||'{}');if(s&&s.theme)document.documentElement.setAttribute('data-theme',s.theme);if(s&&s.reduceMotion)document.documentElement.setAttribute('data-reduce-motion','on');}catch(e){}})();</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/playlist.css">
@@ -20,13 +23,25 @@
                     <img src="assets/icons/logo-app.png" alt="Logo" class="logo-img">
                     <h1 class="logo-text">EchoArchive</h1>
                 </div>
-                <button class="icon-btn" id="btn-settings" aria-label="Настройки">
-                    <span class="material-icons">settings</span>
-                </button>
+                <button class="icon-btn" id="btn-settings" aria-label="Настройки"><span class="material-icons">settings</span></button>
             </header>
 
             <div class="home-content">
+                <p class="greeting-kicker" id="greeting-kicker">сегодня · суббота</p>
                 <h2 class="greeting" id="greeting-text">Привет</h2>
+
+                <div class="continue-card" id="continue-card" hidden>
+                    <div class="continue-cover"><img id="continue-cover" src="assets/icons/logo-app.png" alt=""></div>
+                    <div class="continue-text">
+                        <span class="continue-label">Продолжить</span>
+                        <span class="continue-title" id="continue-title">—</span>
+                        <span class="continue-artist" id="continue-artist">—</span>
+                    </div>
+                    <button class="continue-play" id="continue-play" aria-label="Продолжить"><span class="material-icons">play_arrow</span></button>
+                </div>
+
+                <div class="moments" id="moments-row"></div>
+
                 <div class="quick-playlists" id="quick-playlists"></div>
 
                 <div class="section-block" id="recent-section" style="display:none;">
@@ -64,17 +79,13 @@
                     <button class="filter-chip" data-type="album">Альбомы</button>
                 </div>
             </div>
-
             <div class="results-section">
                 <div class="section-block" id="similar-search-section" style="display:none;">
                     <div class="section-header"><h3>Похожие альбомы</h3></div>
                     <div class="similar-row" id="similar-search-row"></div>
                 </div>
                 <div id="results-list" class="results-list">
-                    <div class="empty-state">
-                        <span class="material-icons empty-icon">search</span>
-                        <p>Найдите музыку на Archive.org</p>
-                    </div>
+                    <div class="empty-state"><span class="material-icons empty-icon">search</span><p>Найдите музыку на Archive.org</p></div>
                 </div>
             </div>
         </section>
@@ -102,7 +113,7 @@
                 <span class="playlist-detail-title" id="playlist-detail-name">Плейлист</span>
                 <button class="btn-more" id="btn-playlist-menu"><span class="material-icons">more_vert</span></button>
             </header>
-            <div class="playlist-hero" id="playlist-hero">
+            <div class="playlist-hero">
                 <div class="playlist-cover-large" id="playlist-cover-large"><span class="material-icons">music_note</span></div>
                 <div class="playlist-meta">
                     <span class="playlist-type-label">Плейлист</span>
@@ -117,8 +128,7 @@
             </div>
             <div class="playlist-tracks" id="playlist-tracks"></div>
             <div class="empty-state" id="empty-playlist-tracks" style="display:none;">
-                <span class="material-icons empty-icon">music_off</span>
-                <p>Плейлист пуст. Добавьте треки из поиска.</p>
+                <span class="material-icons empty-icon">music_off</span><p>Плейлист пуст. Добавьте треки из поиска.</p>
             </div>
         </section>
 
@@ -144,8 +154,7 @@
             </div>
             <div class="playlist-tracks" id="album-tracks"></div>
             <div class="empty-state" id="empty-album-tracks" style="display:none;">
-                <span class="material-icons empty-icon">music_off</span>
-                <p>Нет подходящих аудиофайлов. Измените форматы в настройках.</p>
+                <span class="material-icons empty-icon">music_off</span><p>Нет подходящих аудиофайлов. Измените форматы в настройках.</p>
             </div>
             <div class="section-block album-similar" id="album-similar-section" style="display:none;">
                 <div class="section-header"><h3>Похожие альбомы</h3></div>
@@ -165,13 +174,15 @@
                     <h4 class="settings-group-title">Тема оформления</h4>
                     <div class="themes-grid" id="themes-grid"></div>
                 </div>
-
                 <div class="settings-group">
                     <h4 class="settings-group-title">Форматы аудио</h4>
                     <p class="settings-hint">Отметьте форматы, которые хотите видеть и слушать.</p>
                     <div class="formats-list" id="formats-list"></div>
                 </div>
-
+                <div class="settings-group">
+                    <h4 class="settings-group-title">Доступность</h4>
+                    <div class="formats-list" id="a11y-list"></div>
+                </div>
                 <div class="settings-group">
                     <h4 class="settings-group-title">Проект</h4>
                     <a class="settings-link" id="link-github" href="https://github.com/vovka11-collab" target="_blank" rel="noopener">
@@ -185,11 +196,10 @@
                         <span class="material-icons sl-arrow">open_in_new</span>
                     </a>
                 </div>
-
                 <div class="settings-about">
                     <img src="assets/icons/logo-app.png" alt="Logo" class="about-logo">
                     <div class="about-name">EchoArchive</div>
-                    <div class="about-ver">версия 0.3.0 · музыка из Archive.org</div>
+                    <div class="about-ver">версия 0.4.0 · музыка из Archive.org</div>
                 </div>
             </div>
         </section>
@@ -201,9 +211,12 @@
             </div>
             <div class="player-content">
                 <div class="cover-container"><img id="player-cover" src="assets/icons/logo-app.png" alt="Cover" class="player-cover"></div>
-                <div class="player-text" id="player-text-area">
+                <div class="player-text">
                     <div id="player-title" class="player-title">Не выбран трек</div>
-                    <div id="player-artist" class="player-artist">EchoArchive</div>
+                    <div class="player-subline">
+                        <span id="player-artist" class="player-artist">EchoArchive</span>
+                        <span id="sleep-indicator" class="sleep-indicator" hidden><span class="material-icons">bedtime</span><b id="sleep-indicator-time">0:00</b></span>
+                    </div>
                 </div>
                 <div class="player-controls">
                     <button id="shuffle-btn" class="control-btn ctrl-small"><span class="material-icons">shuffle</span></button>
@@ -222,7 +235,7 @@
             <button class="nav-item" data-screen="library"><span class="material-icons">library_music</span><span class="nav-label">Библиотека</span></button>
         </nav>
 
-        <!-- ═══════════ МОДАЛКА: СОЗДАНИЕ ═══════════ -->
+        <!-- ═══════════ МОДАЛКИ ═══════════ -->
         <div class="modal-overlay" id="modal-create" style="display:none;">
             <div class="modal-sheet">
                 <div class="modal-handle"></div>
@@ -236,7 +249,6 @@
             </div>
         </div>
 
-        <!-- ═══════════ МОДАЛКА: ДОБАВИТЬ В ПЛЕЙЛИСТ ═══════════ -->
         <div class="modal-overlay" id="modal-add-to" style="display:none;">
             <div class="modal-sheet">
                 <div class="modal-handle"></div>
@@ -246,7 +258,6 @@
             </div>
         </div>
 
-        <!-- ═══════════ МОДАЛКА: МЕНЮ ПЛЕЙЛИСТА ═══════════ -->
         <div class="modal-overlay" id="modal-playlist-menu" style="display:none;">
             <div class="modal-sheet">
                 <div class="modal-handle"></div>
@@ -258,14 +269,26 @@
             </div>
         </div>
 
+        <div class="modal-overlay" id="modal-sleep" style="display:none;">
+            <div class="modal-sheet">
+                <div class="modal-handle"></div>
+                <h3 class="modal-title">Таймер сна</h3>
+                <p class="settings-hint">Музыка плавно стихнет и остановится.</p>
+                <div class="sleep-grid" id="sleep-grid"></div>
+                <div class="modal-actions"><button class="btn-secondary" id="btn-cancel-sleep">Закрыть</button></div>
+            </div>
+        </div>
+
         <div class="toast" id="toast" style="display:none;"></div>
     </div>
 
     <script src="js/playlists.js"></script>
+    <script src="js/ambient.js"></script>
     <script src="js/player.js"></script>
     <script src="js/album.js"></script>
     <script src="js/search.js"></script>
     <script src="js/settings.js"></script>
+    <script src="js/moments.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

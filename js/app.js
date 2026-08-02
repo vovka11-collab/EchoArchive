@@ -1,5 +1,5 @@
 /**
- * EchoArchive — App controller: навигация, рендер, модалки.
+ * EchoArchive — App controller: навигация, рендер, модалки, инициализация живых слоёв.
  */
 window.App = {
     currentScreen: 'home',
@@ -11,8 +11,10 @@ window.App = {
     init() {
         window.Playlists.init();
         window.Settings.init();
+        window.Ambient.init();
         window.Player.init();
         window.Search.init();
+        window.Moments.init();
 
         this.initNavigation();
         this.bindCreateButtons();
@@ -34,7 +36,6 @@ window.App = {
     trackKey(t) { return (t.releaseId || t.id || '') + '|' + (t.file || ''); },
     esc(s) { if (s == null) return ''; const d = document.createElement('div'); d.textContent = String(s); return d.innerHTML; },
 
-    /* ═══════════ навигация ═══════════ */
     initNavigation() {
         document.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', () => this.switchScreen(item.getAttribute('data-screen'), true));
@@ -52,14 +53,9 @@ window.App = {
     openPlaylist(id) { this.previousScreen = this.currentScreen; this.currentPlaylistId = id; this.renderPlaylistDetail(id); this.switchScreen('playlist'); },
     openAlbum(id) { this.previousScreen = this.currentScreen; this.switchScreen('album'); window.Album.open(id); },
     openSettings() { this.previousScreen = this.currentScreen; this.switchScreen('settings'); },
-    navigateBack() {
-        this.currentPlaylistId = null;
-        this.switchScreen(this.previousScreen || 'home', true);
-        this.refreshAllViews();
-    },
+    navigateBack() { this.currentPlaylistId = null; this.switchScreen(this.previousScreen || 'home', true); this.refreshAllViews(); },
     initSettingsNav() { const b = document.getElementById('btn-settings'); if (b) b.addEventListener('click', () => this.openSettings()); },
 
-    /* ═══════════ рендер ═══════════ */
     refreshAllViews() {
         this.renderHomePlaylists();
         this.renderLibraryPlaylists();
@@ -83,8 +79,8 @@ window.App = {
 
         if (quick) {
             quick.innerHTML = '';
-            pls.slice(0, 4).forEach(pl => {
-                const item = document.createElement('div'); item.className = 'quick-item';
+            pls.slice(0, 4).forEach((pl, i) => {
+                const item = document.createElement('div'); item.className = 'quick-item reveal'; item.style.animationDelay = (i * 40) + 'ms';
                 const urls = window.Playlists.getCoverUrls(pl);
                 if (urls.length) {
                     const img = document.createElement('img'); img.src = urls[0]; img.className = 'quick-item-cover'; img.alt = '';
@@ -98,9 +94,9 @@ window.App = {
         if (recSec && recGrid) {
             const recent = [...pls].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 4);
             recSec.style.display = recent.length ? 'block' : 'none';
-            recGrid.innerHTML = ''; recent.forEach(pl => recGrid.appendChild(this.createPlaylistCard(pl)));
+            recGrid.innerHTML = ''; recent.forEach((pl, i) => recGrid.appendChild(this.createPlaylistCard(pl, i)));
         }
-        grid.innerHTML = ''; pls.forEach(pl => grid.appendChild(this.createPlaylistCard(pl)));
+        grid.innerHTML = ''; pls.forEach((pl, i) => grid.appendChild(this.createPlaylistCard(pl, i)));
     },
 
     renderLibraryPlaylists() {
@@ -109,8 +105,8 @@ window.App = {
         const empty = document.getElementById('empty-library'); if (!list) return;
         if (!pls.length) { list.style.display = 'none'; if (empty) empty.style.display = 'flex'; return; }
         list.style.display = 'flex'; if (empty) empty.style.display = 'none'; list.innerHTML = '';
-        pls.forEach(pl => {
-            const item = document.createElement('div'); item.className = 'playlist-list-item';
+        pls.forEach((pl, i) => {
+            const item = document.createElement('div'); item.className = 'playlist-list-item reveal'; item.style.animationDelay = (Math.min(i, 10) * 35) + 'ms';
             const cov = document.createElement('div'); cov.className = 'playlist-list-cover';
             const urls = window.Playlists.getCoverUrls(pl);
             if (urls.length) { const img = document.createElement('img'); img.src = urls[0]; img.alt = ''; img.onerror = function () { this.outerHTML = '<span class="material-icons">music_note</span>'; }; cov.appendChild(img); }
@@ -140,13 +136,16 @@ window.App = {
         const tc = document.getElementById('playlist-tracks'); const empty = document.getElementById('empty-playlist-tracks'); if (!tc) return;
         if (!pl.tracks.length) { tc.innerHTML = ''; if (empty) empty.style.display = 'flex'; return; }
         if (empty) empty.style.display = 'none'; tc.innerHTML = '';
-        pl.tracks.forEach((t, i) => tc.appendChild(this.renderPlaylistTrackRow(pl.id, t, i, pl.tracks)));
+        pl.tracks.forEach((t, i) => tc.appendChild(this.renderPlaylistTrackRow(pl.id, t, i, pl.tracks, i)));
         window.Player.highlightCurrent();
     },
 
-    renderPlaylistTrackRow(playlistId, track, index, queue) {
-        const item = document.createElement('div'); item.className = 'playlist-track-item'; item.setAttribute('data-track-key', this.trackKey(track));
-        const num = document.createElement('span'); num.className = 'playlist-track-num'; num.textContent = index + 1;
+    renderPlaylistTrackRow(playlistId, track, index, queue, revealIdx) {
+        const item = document.createElement('div'); item.className = 'playlist-track-item reveal';
+        item.style.animationDelay = (Math.min(revealIdx, 10) * 35) + 'ms';
+        item.setAttribute('data-track-key', this.trackKey(track));
+        const idx = document.createElement('span'); idx.className = 'pt-index';
+        idx.innerHTML = '<span class="pt-num">' + (index + 1) + '</span><span class="eq"><i></i><i></i><i></i><i></i></span>';
         const img = document.createElement('img'); img.src = track.cover || 'assets/icons/logo-app.png'; img.className = 'playlist-track-cover'; img.alt = ''; img.loading = 'lazy';
         img.onerror = function () { this.src = 'assets/icons/logo-app.png'; };
         const info = document.createElement('div'); info.className = 'playlist-track-info';
@@ -154,14 +153,15 @@ window.App = {
         info.innerHTML = '<div class="playlist-track-title">' + this.esc(track.title) + '</div><div class="playlist-track-artist">' + this.esc(track.artist) +
             (track.format ? ' · <span class="pt-format">' + track.format + '</span>' : '') + (dur ? ' · ' + dur : '') + '</div>';
         const rm = document.createElement('button'); rm.className = 'playlist-track-remove'; rm.title = 'Удалить'; rm.innerHTML = '<span class="material-icons">close</span>';
-        item.appendChild(num); item.appendChild(img); item.appendChild(info); item.appendChild(rm);
+        item.appendChild(idx); item.appendChild(img); item.appendChild(info); item.appendChild(rm);
         item.addEventListener('click', e => { if (e.target.closest('.playlist-track-remove')) return; window.Player.loadAndPlay(track, queue, index); });
         rm.addEventListener('click', e => { e.stopPropagation(); window.Playlists.removeTrack(playlistId, track); this.renderPlaylistDetail(playlistId); this.showToast('Трек удалён'); });
         return item;
     },
 
-    createPlaylistCard(pl) {
-        const card = document.createElement('div'); card.className = 'playlist-card';
+    createPlaylistCard(pl, revealIdx) {
+        const card = document.createElement('div'); card.className = 'playlist-card reveal';
+        card.style.animationDelay = (Math.min(revealIdx || 0, 8) * 45) + 'ms';
         const cov = document.createElement('div'); cov.className = 'playlist-card-cover';
         const urls = window.Playlists.getCoverUrls(pl);
         if (urls.length > 1) { const m = document.createElement('div'); m.className = 'cover-mosaic'; urls.forEach(u => { const img = document.createElement('img'); img.src = u; img.alt = ''; img.onerror = function () { this.style.display = 'none'; }; m.appendChild(img); }); cov.appendChild(m); }
@@ -173,7 +173,6 @@ window.App = {
         card.addEventListener('click', () => this.openPlaylist(pl.id)); return card;
     },
 
-    /* ═══════════ создание плейлиста ═══════════ */
     bindCreateButtons() { ['btn-create-home', 'btn-create-empty', 'btn-create-library', 'btn-create-library-empty'].forEach(id => { const b = document.getElementById(id); if (b) b.addEventListener('click', () => this.openCreateModal()); }); },
     initCreateModal() {
         const modal = document.getElementById('modal-create');
@@ -195,7 +194,6 @@ window.App = {
     },
     closeCreateModal() { const m = document.getElementById('modal-create'); if (m) m.style.display = 'none'; },
 
-    /* ═══════════ модалка добавления (треки = массив) ═══════════ */
     initAddModal() {
         const modal = document.getElementById('modal-add-to');
         const cancel = document.getElementById('btn-cancel-add');
@@ -226,7 +224,6 @@ window.App = {
     },
     closeAddModal() { const m = document.getElementById('modal-add-to'); if (m) m.style.display = 'none'; this._addPayload = null; },
 
-    /* ═══════════ меню плейлиста ═══════════ */
     initPlaylistMenu() {
         const mb = document.getElementById('btn-playlist-menu'); const modal = document.getElementById('modal-playlist-menu');
         const cancel = document.getElementById('btn-cancel-menu'); const ren = document.getElementById('menu-rename'); const del = document.getElementById('menu-delete');
@@ -245,7 +242,6 @@ window.App = {
         if (confirm('Удалить плейлист «' + pl.name + '»?')) { window.Playlists.delete(this.currentPlaylistId); this.showToast('Плейлист удалён'); this.navigateBack(); }
     },
 
-    /* ═══════════ действия ═══════════ */
     initPlaylistActions() {
         const p = document.getElementById('btn-play-playlist'); const s = document.getElementById('btn-shuffle-playlist');
         if (p) p.addEventListener('click', () => this.playPlaylist(false));
@@ -264,17 +260,23 @@ window.App = {
         if (a) a.addEventListener('click', () => window.Album.addAllToPlaylist());
     },
 
-    /* ═══════════ утилиты ═══════════ */
     updateGreeting() {
-        const el = document.getElementById('greeting-text'); if (!el) return;
-        const h = new Date().getHours();
+        const el = document.getElementById('greeting-text'); const kicker = document.getElementById('greeting-kicker');
+        if (!el) return;
+        const now = new Date(); const h = now.getHours();
         el.textContent = (h >= 5 && h < 12) ? 'Доброе утро' : (h >= 12 && h < 18) ? 'Добрый день' : (h >= 18 && h < 23) ? 'Добрый вечер' : 'Доброй ночи';
+        if (kicker) {
+            const days = ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'];
+            const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+            kicker.textContent = 'сегодня · ' + now.getDate() + ' ' + months[now.getMonth()] + ', ' + days[now.getDay()];
+        }
     },
+
     showToast(msg) {
         const t = document.getElementById('toast'); if (!t) return;
-        t.textContent = msg; t.style.display = 'block'; clearTimeout(this._toastTimer);
-        this._toastTimer = setTimeout(() => { t.style.display = 'none'; }, 2500);
+        t.textContent = msg; t.classList.add('show'); clearTimeout(this._toastTimer);
+        this._toastTimer = setTimeout(() => { t.classList.remove('show'); }, 2500);
     }
 };
 
-document.addEventListener('DOMContentLoaded', () => window.App.init()); 
+document.addEventListener('DOMContentLoaded', () => window.App.init());

@@ -1,39 +1,38 @@
-/* ═══════════ Settings screen ═══════════ */
+/* ═══════════ Settings ═══════════ */
 .settings-content { padding: 8px 20px 24px; }
-.settings-group { margin-bottom: 28px; }
-.settings-group-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 12px; }
-.settings-hint { font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4; }
+.settings-group { margin-bottom: 30px; animation: rise .5s var(--ease-out) both; }
+.settings-group-title { font-family: var(--font-display); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--accent); margin-bottom: 14px; }
+.settings-hint { font-size: 13px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.45; }
 
 .themes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.theme-opt { background: var(--bg-elevated); border: 2px solid transparent; border-radius: var(--radius-md); padding: 12px; cursor: pointer;
-    display: flex; flex-direction: column; gap: 8px; transition: border-color .2s, transform .1s; text-align: left; }
-.theme-opt:active { transform: scale(.97); }
+.theme-opt { background: color-mix(in srgb, var(--bg-elevated) 88%, transparent); border: 2px solid var(--border); border-radius: var(--radius-md); padding: 12px; cursor: pointer; display: flex; flex-direction: column; gap: 8px; transition: border-color .25s, transform .2s var(--ease-spring); text-align: left; position: relative; overflow: hidden; }
+.theme-opt:active { transform: scale(.96); }
 .theme-opt.active { border-color: var(--accent); }
-.theme-preview { height: 56px; border-radius: 8px; position: relative; overflow: hidden; display: flex; align-items: flex-end; padding: 6px; }
-.theme-preview .dot { width: 14px; height: 14px; border-radius: 50%; }
-.theme-opt-name { font-size: 13px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; justify-content: space-between; }
+.theme-preview { height: 58px; border-radius: 10px; position: relative; overflow: hidden; display: flex; align-items: flex-end; padding: 7px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); }
+.theme-preview .dot { width: 15px; height: 15px; border-radius: 50%; box-shadow: 0 0 10px currentColor; }
+.theme-opt-name { font-size: 13px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; justify-content: space-between; }
 .theme-opt.active .theme-opt-name::after { content: "check"; font-family: "Material Icons"; color: var(--accent); font-size: 18px; }
 
-.formats-list { display: flex; flex-direction: column; gap: 6px; }
-.format-row { display: flex; align-items: center; gap: 14px; padding: 12px 14px; background: var(--bg-elevated); border-radius: var(--radius-md); cursor: pointer; transition: background .15s; }
-.format-row:active { background: var(--bg-highlight); }
+.formats-list { display: flex; flex-direction: column; gap: 8px; }
+.format-row { display: flex; align-items: center; gap: 14px; padding: 13px 14px; background: color-mix(in srgb, var(--bg-elevated) 88%, transparent); border: 1px solid var(--border); border-radius: var(--radius-md); cursor: pointer; transition: background .18s, transform .2s var(--ease-spring); position: relative; overflow: hidden; }
+.format-row:active { background: var(--bg-highlight); transform: scale(.985); }
 .format-row .fr-info { flex: 1; min-width: 0; }
-.format-row .fr-name { font-size: 15px; font-weight: 600; }
+.format-row .fr-name { font-size: 15px; font-weight: 700; }
 .format-row .fr-ext { font-size: 12px; color: var(--text-secondary); }
-.format-toggle { width: 44px; height: 26px; border-radius: 13px; background: var(--bg-highlight); position: relative; flex-shrink: 0; transition: background .2s; }
-.format-toggle::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--text-secondary); transition: transform .2s, background .2s; }
+.format-toggle { width: 46px; height: 27px; border-radius: 14px; background: var(--bg-highlight); position: relative; flex-shrink: 0; transition: background .25s; }
+.format-toggle::after { content: ""; position: absolute; top: 3px; left: 3px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-secondary); transition: transform .28s var(--ease-spring), background .25s; }
 .format-row.on .format-toggle { background: var(--accent-dim); }
-.format-row.on .format-toggle::after { transform: translateX(18px); background: var(--accent); }
+.format-row.on .format-toggle::after { transform: translateX(19px); background: var(--accent); box-shadow: 0 0 8px var(--accent-glow); }
 
-.settings-link { display: flex; align-items: center; gap: 14px; padding: 14px; background: var(--bg-elevated); border-radius: var(--radius-md); margin-bottom: 8px; text-decoration: none; color: var(--text-primary); transition: background .15s; }
-.settings-link:active { background: var(--bg-highlight); }
+.settings-link { display: flex; align-items: center; gap: 14px; padding: 14px; background: color-mix(in srgb, var(--bg-elevated) 88%, transparent); border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: 8px; text-decoration: none; color: var(--text-primary); transition: background .18s, transform .2s var(--ease-spring); position: relative; overflow: hidden; }
+.settings-link:active { background: var(--bg-highlight); transform: scale(.985); }
 .settings-link > .material-icons:first-child { font-size: 22px; color: var(--accent); }
 .settings-link-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.sl-title { font-size: 15px; font-weight: 600; }
+.sl-title { font-size: 15px; font-weight: 700; }
 .sl-sub { font-size: 12px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sl-arrow { font-size: 18px; color: var(--text-muted); }
 
 .settings-about { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 24px 0 8px; gap: 8px; }
-.about-logo { width: 64px; height: 64px; border-radius: 16px; object-fit: contain; }
-.about-name { font-size: 18px; font-weight: 700; }
+.about-logo { width: 66px; height: 66px; border-radius: 18px; object-fit: contain; box-shadow: 0 10px 30px rgba(0,0,0,.4); }
+.about-name { font-family: var(--font-display); font-size: 19px; font-weight: 800; }
 .about-ver { font-size: 13px; color: var(--text-secondary); }
